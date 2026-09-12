@@ -225,17 +225,18 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
     if (!rolled || rolled.type !== 'diceRolled') return;
     const who = rolled.player === human ? 'You' : state.players[rolled.player].name;
     const outcome: string[] = [];
+    const gains: { who: string; bag: ResourceBag }[] = [];
     const produced = last.events.find((e) => e.type === 'resourcesProduced');
     if (produced && produced.type === 'resourcesProduced') {
       produced.gains.forEach((g, p) => {
-        if (Object.values(g).some((n) => n > 0)) outcome.push(`${p === human ? 'You' : state.players[p].name} got ${bagWords(g)}`);
+        if (Object.values(g).some((n) => n > 0)) gains.push({ who: p === human ? 'You' : state.players[p].name, bag: g });
       });
-      if (outcome.length === 0) outcome.push('Nobody produced anything.');
+      if (gains.length === 0) outcome.push('Nobody produced anything.');
     } else if (rolled.total === 7) {
       const discards = last.events.find((e) => e.type === 'discardRequired');
       outcome.push(discards && discards.type === 'discardRequired' ? `A 7! ${discards.players.map((p) => (p === human ? 'You' : state.players[p].name)).join(', ')} must discard half.` : 'A 7! The robber moves.');
     }
-    setDiceRoll({ id: history.length, dice: rolled.dice, who, outcome });
+    setDiceRoll({ id: history.length, dice: rolled.dice, who, outcome, gains });
     // Resource flights start when the dice have settled (see DiceOverlay timing).
     if (produced && produced.type === 'resourcesProduced' && rolled.total !== 7) {
       const total = rolled.total;

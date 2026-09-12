@@ -481,6 +481,125 @@ button.btn.build {
   gap: 8px;
   margin-top: 16px;
 }
+.modal-actions .btn.ghost {
+  margin-right: auto;
+  background: transparent;
+  border: 1px solid var(--line);
+}
+.modal-hint {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+}
+.offer-hand {
+  margin: 4px 0 14px;
+  padding: 8px 12px 10px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.22);
+}
+.offer-hand .offer-heading {
+  font-size: 16px;
+  margin-bottom: 0;
+}
+.offer-hand .offer-heading .muted {
+  font-family: inherit;
+  font-size: 12px;
+}
+.offer-hand .hand-arc {
+  height: 160px;
+}
+.offer-hand .hand-legend {
+  justify-content: center;
+  gap: 10px;
+}
+.modal.wide {
+  width: min(760px, calc(100% - 32px));
+}
+.modal.wide h2 {
+  font-size: 26px;
+}
+.offer-heading {
+  font-family: var(--font);
+  font-size: 20px;
+  margin-bottom: 8px;
+}
+.offer-heading.get {
+  color: #9ed16f;
+}
+.offer-heading.give {
+  color: #f0a35e;
+}
+.offer-cards.big {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.offer-card {
+  position: relative;
+  width: 72px;
+  height: 102px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #3a2e20;
+  box-shadow:
+    0 0 0 1px rgba(255, 240, 210, 0.35),
+    0 8px 18px rgba(0, 0, 0, 0.55);
+}
+.offer-card img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.offer-card-label {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 3px 0 4px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: capitalize;
+  color: #fff4dc;
+  background: rgba(20, 16, 12, 0.85);
+}
+.offer-nothing {
+  color: var(--muted);
+  font-style: italic;
+}
+.offer-grid .offer-side {
+  min-height: 150px;
+}
+/* The tucked-away trade offer: a tab over the board that brings the card back. */
+.offer-peek {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 18px;
+  border-radius: 14px;
+  border: 1px solid var(--accent);
+  background: rgba(40, 32, 22, 0.92);
+  color: #fff4dc;
+  cursor: pointer;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  animation: pop-in 0.15s ease-out;
+}
+.offer-peek-title {
+  font-size: 14px;
+}
+.offer-peek-cta {
+  font-size: 12px;
+  color: var(--accent-2);
+  text-decoration: underline;
+}
 .pick-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1086,10 +1205,78 @@ button.pick:disabled {
 .hand-card-btn:not(:disabled) {
   cursor: pointer;
 }
+.hand-card-btn:hover {
+  --lift: -14px;
+  filter: brightness(1.12);
+  z-index: 40 !important;
+}
 .hand-card-btn:not(:disabled):hover {
   --lift: -18px;
   filter: brightness(1.15);
-  z-index: 40 !important;
+}
+/* "2 Brick" above the card under the cursor. */
+.hand-card-count {
+  position: absolute;
+  left: 50%;
+  top: -30px;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  padding: 3px 9px;
+  border-radius: 8px;
+  background: rgba(20, 16, 12, 0.92);
+  border: 1px solid var(--accent);
+  color: #fff4dc;
+  font-size: 12px;
+  font-weight: 700;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+}
+.hand-card-btn:hover .hand-card-count {
+  opacity: 1;
+}
+/* Dice result: who got which cards. */
+.gain-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 4px 0;
+}
+.gain-who {
+  min-width: 90px;
+  text-align: right;
+}
+.gain-cards {
+  display: inline-flex;
+  gap: 5px;
+}
+.gain-card {
+  position: relative;
+  width: 40px;
+  height: 56px;
+  border-radius: 5px;
+  overflow: hidden;
+  background: #3a2e20;
+  box-shadow: 0 0 0 1px rgba(255, 240, 210, 0.4), 0 4px 10px rgba(0, 0, 0, 0.5);
+}
+.gain-card img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.gain-card-label {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  font-size: 9px;
+  font-weight: 700;
+  text-align: center;
+  padding: 1px 0 2px;
+  color: #fff4dc;
+  background: rgba(20, 16, 12, 0.85);
 }
 .hand-card-btn.picked {
   --lift: -26px;

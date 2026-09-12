@@ -2,11 +2,11 @@ import type { DevCard, Resource, ResourceBag, Terrain } from '@/engine/types';
 import { RESOURCES } from '@/engine/types';
 
 export const RESOURCE_LABEL: Record<Resource, string> = {
-  brick: 'brick',
-  lumber: 'lumber',
-  ore: 'ore',
-  grain: 'grain',
-  wool: 'wool',
+  brick: 'Brick',
+  lumber: 'Lumber',
+  ore: 'Ore',
+  grain: 'Grain',
+  wool: 'Wool',
 };
 
 export const TERRAIN_LABEL: Record<Terrain, string> = {

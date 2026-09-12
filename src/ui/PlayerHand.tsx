@@ -64,6 +64,9 @@ export function PlayerHand({ resources, selectable, selected, onToggle }: Player
               onClick={() => onToggle?.(c.resource, c.isSelected ? -1 : 1)}
             >
               <CardFace resource={c.resource} />
+              <span className="hand-card-count">
+                {total} {label(c.resource)}
+              </span>
             </button>
           );
         })}

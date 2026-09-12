@@ -261,7 +261,7 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
             if (!card) continue;
             const count = b.kind === 'city' ? 2 : 1;
             for (let i = 0; i < count; i++) {
-              list.push({ id: `${history.length}-${h}-${v}-${i}`, resource, from, via: { x: via.x + (i - 0.5) * 18, y: via.y }, to: { x: card.left + card.width / 2, y: card.top + card.height / 2 }, delay: n * 90 });
+              list.push({ id: `${history.length}-${h}-${v}-${i}`, resource, from, via: { x: via.x + (i - 0.5) * 44, y: via.y }, to: { x: card.left + card.width / 2, y: card.top + card.height / 2 }, delay: n * 260 });
               n++;
             }
           }
@@ -286,7 +286,7 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
     let n = 0;
     const fly = (resource: Resource, from: { x: number; y: number } | null, to: { x: number; y: number } | null, tag: string) => {
       if (!from || !to) return;
-      list.push({ id: `${history.length}-${tag}-${n}`, resource, from, via: { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 }, to, delay: n * 90 });
+      list.push({ id: `${history.length}-${tag}-${n}`, resource, from, via: { x: (from.x + to.x) / 2 + (n % 3) * 30, y: (from.y + to.y) / 2 }, to, delay: n * 260 });
       n++;
     };
     for (const ev of last.events) {

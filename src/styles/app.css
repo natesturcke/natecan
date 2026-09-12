@@ -948,11 +948,42 @@ button.pick:disabled {
 }
 .flight {
   position: absolute;
-  left: -13px;
-  top: -18px;
-  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.6));
+  left: 0;
+  top: 0;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #3a2e20;
+  box-shadow:
+    0 0 0 2px #fff4dc,
+    0 10px 24px rgba(0, 0, 0, 0.7);
   will-change: transform, opacity;
+  transform-origin: 50% 50%;
 }
+.flight img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.flight-label {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 2px 0 3px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: capitalize;
+  color: #fff4dc;
+  background: rgba(20, 16, 12, 0.85);
+}
+.flight.brick .flight-label { border-top: 2px solid #b5552e; }
+.flight.lumber .flight-label { border-top: 2px solid #2f6b2f; }
+.flight.ore .flight-label { border-top: 2px solid #8b8fa0; }
+.flight.grain .flight-label { border-top: 2px solid #d9b83a; }
+.flight.wool .flight-label { border-top: 2px solid #9ed16f; }
 
 /* ---------- left hand: real fanned cards ---------- */
 .hand-title {
@@ -1439,11 +1470,42 @@ button.pick:disabled {
 }
 .flight {
   position: absolute;
-  left: -13px;
-  top: -18px;
-  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.6));
+  left: 0;
+  top: 0;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #3a2e20;
+  box-shadow:
+    0 0 0 2px #fff4dc,
+    0 10px 24px rgba(0, 0, 0, 0.7);
   will-change: transform, opacity;
+  transform-origin: 50% 50%;
 }
+.flight img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.flight-label {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 2px 0 3px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: capitalize;
+  color: #fff4dc;
+  background: rgba(20, 16, 12, 0.85);
+}
+.flight.brick .flight-label { border-top: 2px solid #b5552e; }
+.flight.lumber .flight-label { border-top: 2px solid #2f6b2f; }
+.flight.ore .flight-label { border-top: 2px solid #8b8fa0; }
+.flight.grain .flight-label { border-top: 2px solid #d9b83a; }
+.flight.wool .flight-label { border-top: 2px solid #9ed16f; }
 
 /* ---------- left hand panel ---------- */
 .board-column {

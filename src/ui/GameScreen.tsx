@@ -92,7 +92,7 @@ function ghostFor(pending: Pending | null, human: PlayerId): Ghost {
 }
 
 /** Screen space used by the hand panel (left), sidebar (right), instruction card (top). */
-const BOARD_INSETS = { left: 282, right: 372, top: 96, bottom: 20 };
+const BOARD_INSETS = { left: 330, right: 372, top: 96, bottom: 20 };
 
 const AUTO_ADVANCE: ReadonlySet<Action['type']> = new Set(['SETUP_PLACE_ROAD', 'STEAL']);
 

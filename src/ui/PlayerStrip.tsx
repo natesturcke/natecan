@@ -22,10 +22,10 @@ export function PlayerStrip({ state, human }: { state: GameState; human: PlayerI
               </span>
             </div>
             <div className="player-stats">
-              <span title="Resource cards">🂠 {bagTotal(p.resources)}</span>
-              <span title="Development cards">✦ {p.devCards.length + p.newDevCards.length}</span>
-              <span title="Knights played">⚔ {p.knightsPlayed}</span>
-              <span title="Longest road">🛣 {p.roadLength}</span>
+              <span title="Resource cards in hand">{bagTotal(p.resources)} cards</span>
+              <span title="Development cards held">{p.devCards.length + p.newDevCards.length} dev</span>
+              <span title="Knights played">{p.knightsPlayed} knights</span>
+              <span title="Longest continuous road">road {p.roadLength}</span>
             </div>
             <div className="player-badges">
               {state.longestRoad.holder === p.id && <span className="badge">Longest Road</span>}

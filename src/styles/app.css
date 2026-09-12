@@ -1029,3 +1029,26 @@ button.pick:disabled {
 .hand-panel .dev-card {
   background: rgba(60, 50, 38, 0.55);
 }
+
+.offer-grid {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 12px;
+  margin: 8px 0;
+}
+.offer-side {
+  background: var(--panel-2);
+  border-radius: 10px;
+  padding: 10px;
+  min-height: 80px;
+}
+.offer-cards {
+  display: inline-flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.offer-arrow {
+  font-size: 28px;
+  color: var(--accent-2);
+}

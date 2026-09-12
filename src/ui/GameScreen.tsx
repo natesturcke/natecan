@@ -34,6 +34,7 @@ import { MaritimeDialog } from './dialogs/MaritimeDialog';
 import { PickResourcesDialog } from './dialogs/PickResourcesDialog';
 import { TradeDialog } from './dialogs/TradeDialog';
 import { TradeResolveDialog } from './dialogs/TradeResolveDialog';
+import { TradeOfferDialog } from './dialogs/TradeOfferDialog';
 import { bagText } from './text';
 
 export interface GameScreenProps {
@@ -251,7 +252,7 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
           }
         }
         setFlights(list);
-      }, 1200);
+      }, 2600);
       return () => clearTimeout(t);
     }
   }, [history, history.length, human, state.players, state.board, state.robber, state.buildings]);
@@ -301,12 +302,9 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
         }
         buttons.push({ label: 'Confirm', onClick: () => stealPick !== null && dispatch({ player: human, type: 'STEAL', victim: stealPick }), disabled: stealPick === null, primary: true });
         break;
-      case 'tradeOffer': {
-        const canAccept = bagCovers(me.resources, phase.offer.want);
-        buttons.push({ label: 'Accept', onClick: () => dispatch({ player: human, type: 'TRADE_ACCEPT' }), primary: true, disabled: !canAccept, title: canAccept ? '' : 'You cannot afford this' });
-        buttons.push({ label: 'Decline', onClick: () => dispatch({ player: human, type: 'TRADE_REJECT' }) });
+      case 'tradeOffer':
+        // Presented as a centred dialog instead.
         break;
-      }
       case 'main':
         if (mode !== 'idle') buttons.push({ label: 'Cancel', onClick: () => setMode('idle') });
         else {
@@ -368,7 +366,7 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
               onPieceHover={setPieceHover}
               onProjector={(fn) => (projector.current = fn)}
             />
-            {!pending && <PromptBar prompt={prompt} buttons={buttons} floating />}
+            {!pending && !(phase.kind === 'tradeOffer' && yourMove) && <PromptBar prompt={prompt} buttons={buttons} floating />}
             {hover && hoverText && hover.kind === 'vertex' && mode !== 'city' && <CornerTooltip state={state} vertex={hover.id} action={hoverText} x={hover.x} y={hover.y} />}
             {hover && hoverText && (hover.kind !== 'vertex' || mode === 'city') && (
               <div className="hover-tip" style={{ left: hover.x, top: hover.y }}>
@@ -451,6 +449,9 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
           onClose={() => setDialog({ kind: 'none' })}
           onConfirm={([resource]) => dispatch({ player: human, type: 'PLAY_MONOPOLY', resource })}
         />
+      )}
+      {phase.kind === 'tradeOffer' && yourMove && (
+        <TradeOfferDialog state={state} human={human} onAccept={() => dispatch({ player: human, type: 'TRADE_ACCEPT' })} onDecline={() => dispatch({ player: human, type: 'TRADE_REJECT' })} />
       )}
       {phase.kind === 'tradeResolve' && yourMove && (
         <TradeResolveDialog state={state} human={human} onConfirm={(w) => dispatch({ player: human, type: 'TRADE_CONFIRM', with: w })} onCancel={() => dispatch({ player: human, type: 'TRADE_CANCEL' })} />

@@ -11,7 +11,7 @@ import { MainMenu, type MenuChoice } from './MainMenu';
 
 function botDelay(state: GameState, lastEvents: readonly GameEvent[]): number {
   // Leave time for the dice animation to play out before the next bot action.
-  if (lastEvents.some((e) => e.type === 'diceRolled')) return 5000;
+  if (lastEvents.some((e) => e.type === 'diceRolled')) return 5600;
   switch (state.phase.kind) {
     case 'setup':
       return 550;

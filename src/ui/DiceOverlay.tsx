@@ -77,7 +77,7 @@ export function DiceOverlay({ roll, onDone }: { roll: DiceRoll | null; onDone: (
     const t3 = setTimeout(() => {
       setStage('hidden');
       onDone();
-    }, 2600 + 2200);
+    }, 2600 + 2600);
     return () => {
       clearTimeout(t0);
       clearTimeout(t1);

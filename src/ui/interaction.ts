@@ -57,7 +57,7 @@ export function describeAction(a: Action): string {
     case 'PLAY_ROAD_BUILDING':
       return 'Play Road Building?';
     case 'END_TURN':
-      return 'End your turn?';
+      return 'You could still build something. End your turn anyway?';
     default:
       return 'Confirm?';
   }

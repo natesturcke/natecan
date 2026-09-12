@@ -130,7 +130,7 @@ export function describeStep(state: GameState, human: PlayerId, mode: Mode, pend
       const canLine = can.length > 0 ? `You can ${can.join(', ')}.${buildable ? ' Click a flashing spot on the board to build there.' : ''}` : 'You cannot build anything yet.';
       const cannotLine = cannot.length > 0 ? ` Not yet: ${cannot.join('; ')}.` : '';
       return {
-        title: 'Your turn: trade or build, then end your turn.',
+        title: 'Your turn: trade or build.',
         detail: `${rolled}${canLine}${cannotLine}`,
         yourMove: true,
       };

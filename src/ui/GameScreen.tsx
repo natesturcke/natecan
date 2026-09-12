@@ -367,7 +367,12 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
         if (mode !== 'idle') buttons.push({ label: 'Cancel', onClick: () => setMode('idle') });
         else {
           const canBuild = legal.some((a) => a.type.startsWith('BUILD_') || a.type === 'BUY_DEV_CARD');
-          buttons.push({ label: 'End turn', onClick: (e) => select({ player: human, type: 'END_TURN' }, canBuild ? 'You can still afford to build something.' : undefined, anchorFromEvent(e)), primary: !canBuild });
+          // Ending the turn only asks for confirmation when there is still something you could build.
+          buttons.push({
+            label: 'End turn',
+            onClick: (e) => (canBuild ? select({ player: human, type: 'END_TURN' }, 'You can still afford to build something.', anchorFromEvent(e)) : dispatch({ player: human, type: 'END_TURN' })),
+            primary: !canBuild,
+          });
         }
         break;
       default:
@@ -483,7 +488,7 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
           anchor={pending.anchorFromBoard ? ghostPos : (pending.anchor ?? null)}
           question={pending.question}
           note={pending.note}
-          confirmLabel={pending.action.type === 'END_TURN' ? 'End turn' : 'Confirm'}
+          confirmLabel={pending.action.type === 'END_TURN' ? 'End anyway' : 'Confirm'}
           onConfirm={confirmPending}
           onCancel={cancelPending}
         />

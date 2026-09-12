@@ -480,14 +480,14 @@ const TEAM_COLOUR: Record<PortraitSpec['team'], string> = {
 
 const PORTRAIT_COMMON =
   'A character portrait playing card, full-bleed portrait format, no card border needed. Painted, realistic style matching a tabletop board game with warm, slightly aged palette, ' +
-  'like a hand-painted miniature bust photographed under soft studio light. Head-and-shoulders view, friendly caricature with plenty of personality, plain warm vignette background. ' +
+  'like a hand-painted miniature bust photographed under soft studio light. Half-length view so hands and arms can show, friendly caricature with plenty of personality, plain warm vignette background. ' +
   'At the bottom is a small parchment banner with the bold title text "{TITLE}" and nothing else written.';
 
 function portraitEntry(p: PortraitSpec): ArtEntry {
   return {
     key: p.key,
     kind: 'generate',
-    prompt: `${PORTRAIT_COMMON.replace('{TITLE}', p.title)} Character: ${p.hint}. Their clothing and accessories prominently feature the team colour ${TEAM_COLOUR[p.team]}.`,
+    prompt: `${PORTRAIT_COMMON.replace('{TITLE}', p.title)} Character: ${p.hint}. Pose: ${p.pose}. Their clothing and accessories prominently feature the team colour ${TEAM_COLOUR[p.team]}.`,
     width: CARD_IMAGE.width,
     height: CARD_IMAGE.height,
     apiSize: '1040x1456',

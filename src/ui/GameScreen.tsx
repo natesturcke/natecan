@@ -30,6 +30,7 @@ import { PlayerHand } from './PlayerHand';
 import { PlayerStrip } from './PlayerStrip';
 import { PromptBar, type PromptButton } from './PromptBar';
 import { buildDisabledReason, describeStep } from './prompts';
+import { humanPortraitKey, portraitKey } from './portraits';
 import { RulesDrawer } from './RulesDrawer';
 import { TurnLog } from './TurnLog';
 import { MaritimeDialog } from './dialogs/MaritimeDialog';
@@ -225,11 +226,14 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
     if (!rolled || rolled.type !== 'diceRolled') return;
     const who = rolled.player === human ? 'You' : state.players[rolled.player].name;
     const outcome: string[] = [];
-    const gains: { who: string; bag: ResourceBag }[] = [];
+    const gains: { who: string; portrait: string; color: string; bag: ResourceBag }[] = [];
     const produced = last.events.find((e) => e.type === 'resourcesProduced');
     if (produced && produced.type === 'resourcesProduced') {
       produced.gains.forEach((g, p) => {
-        if (Object.values(g).some((n) => n > 0)) gains.push({ who: p === human ? 'You' : state.players[p].name, bag: g });
+        if (Object.values(g).some((n) => n > 0)) {
+          const player = state.players[p];
+          gains.push({ who: p === human ? 'You' : player.name, portrait: p === human ? humanPortraitKey(state.seed) : portraitKey(player.name), color: player.color, bag: g });
+        }
       });
       if (gains.length === 0) outcome.push('Nobody produced anything.');
     } else if (rolled.total === 7) {

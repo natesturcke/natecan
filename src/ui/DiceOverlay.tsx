@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { RESOURCES, type ResourceBag } from '@/engine/types';
 import { RESOURCE_LABEL } from './text';
+import { Portrait } from './Portrait';
 
 export interface DiceRoll {
   /** Unique id per roll so the same values still re-animate. */
@@ -9,8 +10,8 @@ export interface DiceRoll {
   who: string;
   /** Text lines to reveal after the dice settle, e.g. "A 7! The robber moves." */
   outcome: string[];
-  /** Who got what, shown as cards. */
-  gains: { who: string; bag: ResourceBag }[];
+  /** Who got what, shown as cards next to their portrait. */
+  gains: { who: string; portrait: string; color: string; bag: ResourceBag }[];
 }
 
 function GainCards({ bag }: { bag: ResourceBag }): React.JSX.Element {
@@ -138,15 +139,18 @@ export function DiceOverlay({ roll, onDone, autoDismiss }: DiceOverlayProps): Re
       <div className="dice-caption">
         <div className="dice-total">{settled ? `${roll.who} rolled ${total}` : `${roll.who} rolls…`}</div>
         {stage === 'outcome' && (
-          <div className="dice-outcome">
+          <div className={`dice-outcome ${roll.gains.length > 0 ? 'panel' : ''}`}>
             {roll.gains.map((g, i) => (
-              <div key={i} className="gain-row">
-                <span className="gain-who">{g.who} got</span>
+              <div key={i} className="gain-row" style={{ borderColor: g.color }}>
+                <Portrait portraitKey={g.portrait} name={g.who} color={g.color} size={34} className="gain-portrait" />
+                <span className="gain-who">{g.who}</span>
                 <GainCards bag={g.bag} />
               </div>
             ))}
             {roll.outcome.map((line, i) => (
-              <div key={`t${i}`}>{line}</div>
+              <div key={`t${i}`} className="dice-note">
+                {line}
+              </div>
             ))}
           </div>
         )}

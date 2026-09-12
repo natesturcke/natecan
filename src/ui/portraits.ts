@@ -13,6 +13,31 @@ export interface PortraitSpec {
   hint: string;
   /** Team colour name used for clothing and accents. */
   team: 'blue' | 'orange' | 'white' | 'red';
+  /** How they are posed, so the table never looks like a row of identical busts. */
+  pose: string;
+}
+
+/** Poses dealt round-robin across the roster; consecutive names on a team never share one. */
+export const POSES: string[] = [
+  'facing the viewer straight on, looking directly at the camera',
+  'turned three-quarters to the left, glancing back over the left shoulder',
+  'turned three-quarters to the right, chin slightly raised',
+  'both arms raised high in triumph, grinning',
+  'arms folded across the chest, one eyebrow raised',
+  'pointing straight at the viewer with one hand',
+  'in profile facing left, gazing into the distance',
+  'in profile facing right, laughing',
+  'leaning in towards the viewer with a conspiratorial smile',
+  'holding their signature prop up proudly with both hands',
+  'one hand cupped to the mouth as if calling out',
+  'scratching their head, puzzled',
+  'tipping their hat with one hand',
+  'mid-shrug with both palms up',
+];
+
+function poseFor(index: number): string {
+  // A stride coprime with the pose count spreads poses across teams as well as within them.
+  return POSES[(index * 5) % POSES.length];
 }
 
 export function slug(name: string): string {
@@ -97,9 +122,9 @@ const HUMAN_HINTS = [
 /** Every portrait the art pipeline should paint. */
 export const PORTRAITS: PortraitSpec[] = [
   ...(['blue', 'orange', 'white'] as const).flatMap((team) =>
-    NAMES[team].map<PortraitSpec>((name) => ({ key: portraitKey(name), title: name, hint: BOT_HINTS[name] ?? 'a colourful island settler', team })),
+    NAMES[team].map<PortraitSpec>((name) => ({ key: portraitKey(name), title: name, hint: BOT_HINTS[name] ?? 'a colourful island settler', team, pose: '' })),
   ),
-  ...HUMAN_HINTS.map<PortraitSpec>((hint, i) => ({ key: `portrait-you-${i + 1}`, title: 'Settler', hint, team: 'red' })),
-];
+  ...HUMAN_HINTS.map<PortraitSpec>((hint, i) => ({ key: `portrait-you-${i + 1}`, title: 'Settler', hint, team: 'red', pose: '' })),
+].map((p, i) => ({ ...p, pose: poseFor(i) }));
 
 export const PORTRAIT_KEYS: string[] = PORTRAITS.map((p) => p.key);

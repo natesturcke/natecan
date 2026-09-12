@@ -73,6 +73,8 @@ export class BoardScene extends Phaser.Scene {
   private highlightGfx!: Phaser.GameObjects.Graphics;
   /** "!" badges over spots the rules allow but the hand cannot pay for yet. */
   private dimMarkers: Phaser.GameObjects.Text[] = [];
+  /** Faded ghost pieces (a road, a house) at those same spots, so it is obvious what could go there. */
+  private dimGhosts: { obj: Phaser.GameObjects.GameObject; weight: number }[] = [];
   private hoverGfx!: Phaser.GameObjects.Graphics;
   private vertexZones: Phaser.GameObjects.Zone[] = [];
   private edgeZones: Phaser.GameObjects.Zone[] = [];
@@ -628,16 +630,34 @@ export class BoardScene extends Phaser.Scene {
       const set = this.hovered.kind === 'vertex' ? vs : this.hovered.kind === 'edge' ? es : hs;
       if (!set.has(this.hovered.id)) this.hover(null);
     }
-    // Rebuild the "!" badges for not-yet-affordable spots.
+    // Rebuild the ghost pieces and "!" badges for not-yet-affordable spots.
     this.dimMarkers.forEach((m) => m.destroy());
     this.dimMarkers = [];
+    this.dimGhosts.forEach((g) => g.obj.destroy());
+    this.dimGhosts = [];
     const badge = (x: number, y: number) =>
       this.add
-        .text(x, y, '!', { fontFamily: 'Georgia, serif', fontSize: '22px', fontStyle: 'bold', color: '#ffd166', stroke: '#2b2118', strokeThickness: 5 })
+        .text(x, y, '!', { fontFamily: 'Georgia, serif', fontSize: '28px', fontStyle: 'bold', color: '#ffd166', stroke: '#2b2118', strokeThickness: 6 })
         .setOrigin(0.5, 1)
         .setDepth(DEPTH.highlight + 2);
-    for (const v of h.dimVertices) this.dimMarkers.push(badge(VERTEX_PX[v].x, VERTEX_PX[v].y - HEX_R * 0.16));
-    for (const e of h.dimEdges) this.dimMarkers.push(badge(EDGE_PX[e].mid.x, EDGE_PX[e].mid.y - HEX_R * 0.06));
+    // A sparse palette so the ghosts use neutral amber art rather than any player's colours.
+    const GHOST_OWNER = 99;
+    const ghostColors: string[] = [];
+    ghostColors[GHOST_OWNER] = '#ffd166';
+    for (const v of h.dimVertices) {
+      const kind = this.view?.buildings[v] ? 'city' : 'settlement';
+      const ghost = this.makeBuilding(v, kind, GHOST_OWNER, ghostColors, 0.45);
+      (ghost as unknown as { setDepth?: (d: number) => void }).setDepth?.(DEPTH.highlight - 2);
+      // Lighter for buildings so an existing settlement still shows through its city ghost.
+      this.dimGhosts.push({ obj: ghost, weight: kind === 'city' ? 0.55 : 0.8 });
+      this.dimMarkers.push(badge(VERTEX_PX[v].x, VERTEX_PX[v].y - HEX_R * 0.52));
+    }
+    for (const e of h.dimEdges) {
+      const ghost = this.makeRoad(e, GHOST_OWNER, ghostColors, 0.45);
+      (ghost as unknown as { setDepth?: (d: number) => void }).setDepth?.(DEPTH.highlight - 2);
+      this.dimGhosts.push({ obj: ghost, weight: 1.2 });
+      this.dimMarkers.push(badge(EDGE_PX[e].mid.x, EDGE_PX[e].mid.y - HEX_R * 0.1));
+    }
   }
 
   private drawHighlights(): void {
@@ -666,26 +686,10 @@ export class BoardScene extends Phaser.Scene {
       const poly = hexPolygon(h).map((p) => ({ x: HEX_PX[h].x + (p.x - HEX_PX[h].x) * 0.9, y: HEX_PX[h].y + (p.y - HEX_PX[h].y) * 0.9 }));
       g.strokePoints(poly, true);
     }
-    // Amber throb on a slower beat for "you could build here once you can pay", plus a "!" badge.
-    const dim = 0.4 + 0.3 * Math.sin(this.pulse * Math.PI * 0.6);
-    const amber = 0xffd166;
-    g.lineStyle(3, amber, dim);
-    g.fillStyle(amber, dim * 0.2);
-    for (const v of this.highlights.dimVertices) {
-      const p = VERTEX_PX[v];
-      g.fillCircle(p.x, p.y, HEX_R * 0.14);
-      g.strokeCircle(p.x, p.y, HEX_R * 0.14);
-    }
-    for (const e of this.highlights.dimEdges) {
-      const [va, vb] = TOPOLOGY.edgeVertices[e];
-      const pa = VERTEX_PX[va];
-      const pb = VERTEX_PX[vb];
-      const dx = pb.x - pa.x;
-      const dy = pb.y - pa.y;
-      g.lineStyle(HEX_R * 0.1, amber, dim * 0.8);
-      g.lineBetween(pa.x + dx * 0.2, pa.y + dy * 0.2, pb.x - dx * 0.2, pb.y - dy * 0.2);
-    }
-    for (const m of this.dimMarkers) m.setAlpha(0.55 + 0.45 * Math.max(0, Math.sin(this.pulse * Math.PI * 0.6)));
+    // Ghost pieces and "!" badges throb on a slower beat than the affordable spots.
+    const beat = 0.5 + 0.5 * Math.sin(this.pulse * Math.PI * 0.6);
+    for (const { obj, weight } of this.dimGhosts) (obj as unknown as { setAlpha?: (a: number) => void }).setAlpha?.(Math.min(1, (0.35 + 0.4 * beat) * weight));
+    for (const m of this.dimMarkers) m.setAlpha(0.6 + 0.4 * beat).setScale(0.95 + 0.15 * beat);
     const hg = this.hoverGfx;
     hg.clear();
     if (this.pieceHovered && !this.hovered) {

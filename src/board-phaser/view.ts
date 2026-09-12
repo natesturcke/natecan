@@ -40,3 +40,11 @@ export function toBoardView(state: GameState): BoardView {
   cache.set(state, v);
   return v;
 }
+
+/** Screen-pixel margins occupied by overlay panels; the island is fitted into the rest. */
+export interface Insets {
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+}

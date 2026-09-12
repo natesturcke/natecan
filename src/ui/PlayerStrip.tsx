@@ -12,7 +12,7 @@ export function PlayerStrip({ state, human }: { state: GameState; human: PlayerI
         const isTurn = state.turn.current === p.id && state.phase.kind !== 'ended';
         const isActor = actor === p.id;
         return (
-          <div key={p.id} className={`player-card ${isTurn ? 'turn' : ''} ${isActor ? 'actor' : ''}`} style={{ borderColor: p.color }}>
+          <div key={p.id} data-player={p.id} className={`player-card ${isTurn ? 'turn' : ''} ${isActor ? 'actor' : ''}`} style={{ borderColor: p.color }}>
             <div className="player-head">
               <span className="swatch" style={{ background: p.color }} />
               <span className="player-name">{p.id === human ? 'You' : p.name}</span>

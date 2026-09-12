@@ -18,9 +18,9 @@ export function PlayerHand({ resources, selectable, selected, onToggle }: Player
         const count = resources[r];
         const sel = selected?.[r] ?? 0;
         return (
-          <div key={r} className={`hand-card ${count === 0 ? 'empty' : ''} ${sel > 0 ? 'selected' : ''}`}>
-            <ResourceIcon resource={r} size={36} />
-            <div className="hand-label">{RESOURCE_LABEL[r]}</div>
+          <div key={r} data-hand-card={r} className={`hand-card ${count === 0 ? 'empty' : ''} ${sel > 0 ? 'selected' : ''}`}>
+            <ResourceIcon resource={r} size={48} />
+            <div className="hand-label">{RESOURCE_LABEL[r][0].toUpperCase() + RESOURCE_LABEL[r].slice(1)}</div>
             <div className="hand-count">{count}</div>
             {selectable && count > 0 && (
               <div className="hand-select">

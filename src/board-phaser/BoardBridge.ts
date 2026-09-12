@@ -1,4 +1,4 @@
-import type { BoardView, Ghost, Highlights } from './view';
+import type { BoardView, Ghost, Highlights, Insets } from './view';
 
 type Handler<T> = (payload: T) => void;
 
@@ -6,6 +6,7 @@ export interface ToScene {
   view: BoardView;
   highlights: Highlights;
   ghost: Ghost;
+  insets: Insets;
 }
 
 export interface FromScene {
@@ -25,6 +26,9 @@ export interface FromScene {
 
 /** Tiny typed event bus between the React host and the Phaser scene. */
 export class BoardBridge {
+  /** Set by the scene: world point -> canvas pixel. */
+  project: ((x: number, y: number) => { x: number; y: number }) | null = null;
+
   private toScene = new Map<keyof ToScene, Set<Handler<unknown>>>();
   private fromScene = new Map<keyof FromScene, Set<Handler<unknown>>>();
   private latest: Partial<ToScene> = {};

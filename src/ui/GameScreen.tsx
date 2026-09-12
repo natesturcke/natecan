@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Action } from '@/engine/actions';
 import { bag, bagCovers, bagTotal } from '@/engine/bag';
 import { DISCARD_THRESHOLD } from '@/engine/constants';
@@ -18,6 +18,10 @@ import { DiceOverlay, type DiceRoll } from './DiceOverlay';
 import { TileTooltip, type TileHover } from './TileTooltip';
 import { PieceTooltip, type PieceHover } from './PieceTooltip';
 import { CornerTooltip } from './CornerTooltip';
+import { ResourceFlights, type Flight } from './ResourceFlights';
+import { boardIndex } from '@/engine/board/index';
+import { TOPOLOGY } from '@/engine/board/topology';
+import { TERRAIN_RESOURCE } from '@/engine/constants';
 import { bagText as bagWords } from './text';
 import { narrate, type LogLine } from './narrate';
 import { PlayerHand } from './PlayerHand';
@@ -86,6 +90,9 @@ function ghostFor(pending: Pending | null, human: PlayerId): Ghost {
   }
 }
 
+/** Screen space used by the hand panel (left), sidebar (right), instruction card (top). */
+const BOARD_INSETS = { left: 282, right: 372, top: 96, bottom: 20 };
+
 const AUTO_ADVANCE: ReadonlySet<Action['type']> = new Set(['SETUP_PLACE_ROAD', 'STEAL']);
 
 export function GameScreen({ controller, human, onQuit }: GameScreenProps): React.JSX.Element {
@@ -101,6 +108,9 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
   const [diceRoll, setDiceRoll] = useState<DiceRoll | null>(null);
   const [tileHover, setTileHover] = useState<TileHover | null>(null);
   const [pieceHover, setPieceHover] = useState<PieceHover | null>(null);
+  const projector = useRef<((hex: number) => { x: number; y: number } | null) | null>(null);
+  const [flights, setFlights] = useState<Flight[]>([]);
+  const clearFlights = useCallback(() => setFlights([]), []);
 
   const yourMove = state.phase.kind !== 'ended' && currentActor(state) === human;
   const legal = useMemo(() => (yourMove ? legalActions(state, human) : []), [state, human, yourMove]);
@@ -210,7 +220,41 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
       outcome.push(discards && discards.type === 'discardRequired' ? `A 7! ${discards.players.map((p) => (p === human ? 'You' : state.players[p].name)).join(', ')} must discard half.` : 'A 7! The robber moves.');
     }
     setDiceRoll({ id: history.length, dice: rolled.dice, who, outcome });
-  }, [history, history.length, human, state.players]);
+    // Resource flights start when the dice have settled (see DiceOverlay timing).
+    if (produced && produced.type === 'resourcesProduced' && rolled.total !== 7) {
+      const total = rolled.total;
+      const t = setTimeout(() => {
+        const project = projector.current;
+        const board = document.querySelector('.board-area')?.getBoundingClientRect();
+        if (!project || !board) return;
+        const from = { x: board.left + board.width / 2, y: board.top + board.height / 2 };
+        const list: Flight[] = [];
+        const hexes = boardIndex(state.board).hexesByToken.get(total) ?? [];
+        let n = 0;
+        for (const h of hexes) {
+          if (h === state.robber) continue;
+          const resource = TERRAIN_RESOURCE[state.board.hexes[h].terrain];
+          if (!resource) continue;
+          const via = project(h);
+          if (!via) continue;
+          for (const v of TOPOLOGY.hexVertices[h]) {
+            const b = state.buildings[v];
+            if (!b) continue;
+            if (produced.gains[b.owner][resource] <= 0) continue;
+            const card = (b.owner === human ? document.querySelector(`[data-hand-card="${resource}"]`) : document.querySelector(`[data-player="${b.owner}"]`))?.getBoundingClientRect();
+            if (!card) continue;
+            const count = b.kind === 'city' ? 2 : 1;
+            for (let i = 0; i < count; i++) {
+              list.push({ id: `${history.length}-${h}-${v}-${i}`, resource, from, via: { x: via.x + (i - 0.5) * 18, y: via.y }, to: { x: card.left + card.width / 2, y: card.top + card.height / 2 }, delay: n * 90 });
+              n++;
+            }
+          }
+        }
+        setFlights(list);
+      }, 1200);
+      return () => clearTimeout(t);
+    }
+  }, [history, history.length, human, state.players, state.board, state.robber, state.buildings]);
   const clearDice = useCallback(() => setDiceRoll(null), []);
 
   const hoverText = useMemo(() => {
@@ -308,35 +352,46 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
   return (
     <div className="game-screen">
       <div className="game-body">
-        <div className="board-area">
-          <PhaserBoard
-            view={view}
-            highlights={highlights}
-            ghost={ghost}
-            onVertexClick={onVertexClick}
-            onEdgeClick={onEdgeClick}
-            onHexClick={onHexClick}
-            onGhostPosition={setGhostPos}
-            onHover={setHover}
-            onTileHover={setTileHover}
-            onPieceHover={setPieceHover}
-          />
-          {!pending && <PromptBar prompt={prompt} buttons={buttons} floating />}
-          {hover && hoverText && hover.kind === 'vertex' && mode !== 'city' && <CornerTooltip state={state} vertex={hover.id} action={hoverText} x={hover.x} y={hover.y} />}
-          {hover && hoverText && (hover.kind !== 'vertex' || mode === 'city') && (
-            <div className="hover-tip" style={{ left: hover.x, top: hover.y }}>
-              {hoverText}
+        <div className="board-column">
+          <div className="board-area">
+            <PhaserBoard
+              view={view}
+              highlights={highlights}
+              ghost={ghost}
+              insets={BOARD_INSETS}
+              onVertexClick={onVertexClick}
+              onEdgeClick={onEdgeClick}
+              onHexClick={onHexClick}
+              onGhostPosition={setGhostPos}
+              onHover={setHover}
+              onTileHover={setTileHover}
+              onPieceHover={setPieceHover}
+              onProjector={(fn) => (projector.current = fn)}
+            />
+            {!pending && <PromptBar prompt={prompt} buttons={buttons} floating />}
+            {hover && hoverText && hover.kind === 'vertex' && mode !== 'city' && <CornerTooltip state={state} vertex={hover.id} action={hoverText} x={hover.x} y={hover.y} />}
+            {hover && hoverText && (hover.kind !== 'vertex' || mode === 'city') && (
+              <div className="hover-tip" style={{ left: hover.x, top: hover.y }}>
+                {hoverText}
+              </div>
+            )}
+            {pieceHover && !hover && !pending && <PieceTooltip state={state} human={human} hover={pieceHover} />}
+            {tileHover && !pieceHover && !hover && !pending && <TileTooltip state={state} human={human} hover={tileHover} />}
+            <DiceOverlay roll={diceRoll} onDone={clearDice} />
+            <ResourceFlights flights={flights} onDone={clearFlights} />
+          <div className="hand-panel">
+              <div className="hand-panel-section">
+                <div className="section-title">Your hand</div>
+                <PlayerHand resources={me.resources} selectable={phase.kind === 'discard' && yourMove} selected={discardPick} onToggle={toggleDiscard} />
+              </div>
+              <div className="hand-panel-section">
+                <DevCardPanel state={state} human={human} onPlay={onPlayDev} />
+              </div>
             </div>
-          )}
-          {pieceHover && !hover && !pending && <PieceTooltip state={state} human={human} hover={pieceHover} />}
-          {tileHover && !pieceHover && !hover && !pending && <TileTooltip state={state} human={human} hover={tileHover} />}
-          <DiceOverlay roll={diceRoll} onDone={clearDice} />
+          </div>
         </div>
         <aside className="sidebar">
           <PlayerStrip state={state} human={human} />
-          <div className="section-title">Your hand</div>
-          <PlayerHand resources={me.resources} selectable={phase.kind === 'discard' && yourMove} selected={discardPick} onToggle={toggleDiscard} />
-          <DevCardPanel state={state} human={human} onPlay={onPlayDev} />
           <ActionBar
             state={state}
             human={human}

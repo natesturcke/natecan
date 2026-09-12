@@ -1,14 +1,17 @@
 import Phaser from 'phaser';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { allAssetPaths } from './assets';
 import { BoardBridge } from './BoardBridge';
-import { BoardScene, boardPixelSize, SCENE_KEY } from './BoardScene';
-import type { BoardView, Ghost, Highlights } from './view';
+import { HEX_PX } from './geometry';
+import { BoardScene, SCENE_KEY } from './BoardScene';
+import type { BoardView, Ghost, Highlights, Insets } from './view';
 
 export interface PhaserBoardProps {
   view: BoardView;
   highlights: Highlights;
   ghost: Ghost;
+  /** Screen margins taken by overlay panels. */
+  insets?: Insets;
   onVertexClick?: (vertex: number) => void;
   onEdgeClick?: (edge: number) => void;
   onHexClick?: (hex: number) => void;
@@ -19,6 +22,8 @@ export interface PhaserBoardProps {
   /** Cursor over any tile, in viewport coordinates. */
   onTileHover?: (hover: { hex: number; x: number; y: number } | null) => void;
   onPieceHover?: (hover: { vertex: number; x: number; y: number } | null) => void;
+  /** Receives a function mapping a hex id to viewport coordinates once the board is ready. */
+  onProjector?: (project: (hex: number) => { x: number; y: number } | null) => void;
 }
 
 let availableAssetsPromise: Promise<{ key: string; path: string }[]> | null = null;
@@ -50,6 +55,7 @@ export function PhaserBoard(props: PhaserBoardProps): React.JSX.Element {
   const bridgeRef = useRef<BoardBridge>(new BoardBridge());
   const callbacks = useRef(props);
   callbacks.current = props;
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     const bridge = bridgeRef.current;
@@ -58,14 +64,13 @@ export function PhaserBoard(props: PhaserBoardProps): React.JSX.Element {
 
     void availableAssets().then((assets) => {
       if (cancelled || !hostRef.current) return;
-      const size = boardPixelSize();
       game = new Phaser.Game({
         type: Phaser.AUTO,
         parent: hostRef.current,
         transparent: true,
-        width: Math.round(size.x),
-        height: Math.round(size.y),
-        scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
+        width: hostRef.current.clientWidth || 800,
+        height: hostRef.current.clientHeight || 600,
+        scale: { mode: Phaser.Scale.RESIZE, autoCenter: Phaser.Scale.NO_CENTER },
         render: { antialias: true, pixelArt: false },
         scene: [],
       });
@@ -74,6 +79,16 @@ export function PhaserBoard(props: PhaserBoardProps): React.JSX.Element {
     });
 
     const offs = [
+      bridge.onReact('ready', () => {
+        setReady(true);
+        callbacks.current.onProjector?.((hex) => {
+          if (!game || !bridge.project) return null;
+          const rect = game.canvas.getBoundingClientRect();
+          const scale = rect.width / game.scale.width;
+          const p = bridge.project(HEX_PX[hex].x, HEX_PX[hex].y);
+          return { x: rect.left + p.x * scale, y: rect.top + p.y * scale };
+        });
+      }),
       bridge.onReact('vertexClick', (v) => callbacks.current.onVertexClick?.(v)),
       bridge.onReact('edgeClick', (e) => callbacks.current.onEdgeClick?.(e)),
       bridge.onReact('hexClick', (h) => callbacks.current.onHexClick?.(h)),
@@ -134,6 +149,18 @@ export function PhaserBoard(props: PhaserBoardProps): React.JSX.Element {
   useEffect(() => {
     bridgeRef.current.send('ghost', props.ghost);
   }, [props.ghost]);
+  useEffect(() => {
+    bridgeRef.current.send('insets', props.insets ?? { left: 0, right: 0, top: 0, bottom: 0 });
+  }, [props.insets]);
 
-  return <div ref={hostRef} className="phaser-host" />;
+  return (
+    <>
+      <div ref={hostRef} className="phaser-host" />
+      {!ready && (
+        <div className="board-loading">
+          <div className="board-loading-card">Preparing the island…</div>
+        </div>
+      )}
+    </>
+  );
 }

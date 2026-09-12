@@ -73,8 +73,11 @@ export const EDGE_PX: readonly EdgeGeometry[] = (() => {
   return out;
 })();
 
-/** Screen-space bounding box of the island including a margin for the sea. */
-export function boardBounds(margin = HEX_R * 1.6): { minX: number; minY: number; maxX: number; maxY: number } {
+/**
+ * Screen-space bounding box of the island including a margin of sea. Extra water is
+ * reserved above (instruction card) and below (hand tray) so overlays never cover land.
+ */
+export function boardBounds(margin = HEX_R * 1.1, extraTop = 0, extraBottom = 0, extraRight = 0, extraLeft = 0): { minX: number; minY: number; maxX: number; maxY: number } {
   let minX = Infinity;
   let minY = Infinity;
   let maxX = -Infinity;
@@ -85,7 +88,7 @@ export function boardBounds(margin = HEX_R * 1.6): { minX: number; minY: number;
     maxX = Math.max(maxX, p.x);
     maxY = Math.max(maxY, p.y);
   }
-  return { minX: minX - margin, minY: minY - margin * CAMERA_K, maxX: maxX + margin, maxY: maxY + margin * CAMERA_K };
+  return { minX: minX - margin - extraLeft, minY: minY - margin * CAMERA_K - extraTop, maxX: maxX + margin + extraRight, maxY: maxY + margin * CAMERA_K + extraBottom };
 }
 
 /** Screen-space polygon of a hex's top face. */

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { Difficulty, PlayerSetup, SetupVariant } from '@/engine/types';
+import { botNamesFor } from './names';
 
 export interface MenuChoice {
   seed: number;
@@ -7,14 +8,16 @@ export interface MenuChoice {
   setupVariant: SetupVariant;
 }
 
-const BOT_NAMES = ['Blue', 'Orange', 'White'];
 const BOT_COLORS = ['#3b6fd6', '#e8862e', '#f2efe4'];
+const BOT_KEYS = ['blue', 'orange', 'white'] as const;
 
 export function MainMenu({ onStart }: { onStart: (choice: MenuChoice) => void }): React.JSX.Element {
   const [name, setName] = useState('You');
   const [difficulties, setDifficulties] = useState<Difficulty[]>(['medium', 'medium', 'medium']);
   const [seed, setSeed] = useState(() => String(Math.floor(Math.random() * 1_000_000)));
   const [variant, setVariant] = useState<SetupVariant>('spiral');
+  const names = botNamesFor(Number(seed) || 1);
+  const BOT_NAMES = BOT_KEYS.map((k) => names[k]);
   return (
     <div className="menu">
       <div className="menu-card">

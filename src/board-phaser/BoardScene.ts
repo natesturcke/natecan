@@ -21,7 +21,7 @@ import {
 } from './assets';
 import type { BoardBridge } from './BoardBridge';
 import { boardBounds, EDGE_PX, HEX_PX, hexPolygon, VERTEX_PX, type Point } from './geometry';
-import type { BoardView, Ghost, Highlights } from './view';
+import type { BoardView, Ghost, Highlights, Insets } from './view';
 
 export const SCENE_KEY = 'board';
 
@@ -78,6 +78,8 @@ export class BoardScene extends Phaser.Scene {
   private pulse = 0;
   private unsubscribe: (() => void)[] = [];
   private lastView: BoardView | null = null;
+  private seaLayers: Phaser.GameObjects.TileSprite[] = [];
+  private insets: Insets = { left: 0, right: 0, top: 0, bottom: 0 };
 
   constructor() {
     super(SCENE_KEY);
@@ -96,12 +98,9 @@ export class BoardScene extends Phaser.Scene {
     const b = boardBounds();
     const width = b.maxX - b.minX;
     const height = b.maxY - b.minY;
-    this.cameras.main.setBounds(b.minX, b.minY, width, height);
-    this.cameras.main.centerOn((b.minX + b.maxX) / 2, (b.minY + b.maxY) / 2);
-    const zoom = Math.min(this.scale.width / width, this.scale.height / height);
-    this.cameras.main.setZoom(zoom);
-
-    this.drawSea(b.minX, b.minY, width, height);
+    // Sea far beyond the island so it reaches every edge whatever the window shape.
+    this.drawSea(b.minX - width * 2, b.minY - height * 2, width * 5, height * 5);
+    this.fitCamera();
     this.highlightGfx = this.add.graphics().setDepth(DEPTH.highlight);
     this.hoverGfx = this.add.graphics().setDepth(DEPTH.highlight + 1);
     this.createZones();
@@ -110,19 +109,54 @@ export class BoardScene extends Phaser.Scene {
     this.unsubscribe.push(this.bridge.onScene('view', (v) => this.setView(v)));
     this.unsubscribe.push(this.bridge.onScene('highlights', (h) => this.setHighlights(h)));
     this.unsubscribe.push(this.bridge.onScene('ghost', (g) => this.setGhost(g)));
+    this.unsubscribe.push(
+      this.bridge.onScene('insets', (i) => {
+        this.insets = i;
+        this.fitCamera();
+        this.emitGhostPosition();
+      }),
+    );
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.unsubscribe.forEach((u) => u()));
     this.scale.on(Phaser.Scale.Events.RESIZE, () => {
-      const z = Math.min(this.scale.width / width, this.scale.height / height);
-      this.cameras.main.setZoom(z);
-      this.cameras.main.centerOn((b.minX + b.maxX) / 2, (b.minY + b.maxY) / 2);
+      this.fitCamera();
       this.emitGhostPosition();
     });
+    this.bridge.project = (x, y) => {
+      const cam = this.cameras.main;
+      return { x: (x - cam.worldView.x) * cam.zoom, y: (y - cam.worldView.y) * cam.zoom };
+    };
     this.bridge.emit('ready', undefined);
   }
 
-  override update(_time: number, delta: number): void {
+  /** Zooms so the island fills the canvas area not covered by overlay panels, centred there. */
+  private fitCamera(): void {
+    const b = boardBounds();
+    const width = b.maxX - b.minX;
+    const height = b.maxY - b.minY;
+    // Insets arrive in CSS pixels; the canvas is 1:1 with CSS pixels under RESIZE scaling.
+    const freeW = Math.max(200, this.scale.width - this.insets.left - this.insets.right);
+    const freeH = Math.max(200, this.scale.height - this.insets.top - this.insets.bottom);
+    const zoom = Math.min(freeW / width, freeH / height);
+    const cam = this.cameras.main;
+    cam.setZoom(zoom);
+    // Centre of the free area in canvas pixels, relative to the canvas centre.
+    const freeCx = this.insets.left + freeW / 2 - this.scale.width / 2;
+    const freeCy = this.insets.top + freeH / 2 - this.scale.height / 2;
+    cam.centerOn((b.minX + b.maxX) / 2 - freeCx / zoom, (b.minY + b.maxY) / 2 - freeCy / zoom);
+  }
+
+  override update(time: number, delta: number): void {
     this.pulse += delta / 600;
     this.drawHighlights();
+    if (this.seaLayers.length === 2) {
+      const [base, shimmer] = this.seaLayers;
+      const t = time / 1000;
+      base.tilePositionX += delta * 0.012;
+      base.tilePositionY = Math.sin(t * 0.35) * 6;
+      shimmer.tilePositionX -= delta * 0.02;
+      shimmer.tilePositionY += delta * 0.008;
+      shimmer.setAlpha(0.28 + 0.1 * Math.sin(t * 0.8));
+    }
   }
 
   private has(key: string): boolean {
@@ -145,12 +179,18 @@ export class BoardScene extends Phaser.Scene {
 
   private drawSea(x: number, y: number, w: number, h: number): void {
     if (this.has(MISC_KEYS.sea)) {
+      // Two drifting copies of the seamless texture at different speeds read as moving
+      // water; each is a single textured quad, so the cost is negligible.
       const scale = DISPLAY_SCALE * 1.5;
-      this.add
-        .tileSprite(x, y, w / scale, h / scale, MISC_KEYS.sea)
+      const base = this.add.tileSprite(x, y, w / scale, h / scale, MISC_KEYS.sea).setOrigin(0, 0).setScale(scale).setDepth(DEPTH.sea);
+      const shimmer = this.add
+        .tileSprite(x, y, w / (scale * 1.35), h / (scale * 1.35), MISC_KEYS.sea)
         .setOrigin(0, 0)
-        .setScale(scale)
-        .setDepth(DEPTH.sea);
+        .setScale(scale * 1.35)
+        .setAlpha(0.35)
+        .setBlendMode(Phaser.BlendModes.SCREEN)
+        .setDepth(DEPTH.sea + 0.5);
+      this.seaLayers = [base, shimmer];
     } else {
       this.add.rectangle(x, y, w, h, 0x2a6f97).setOrigin(0, 0).setDepth(DEPTH.sea);
     }

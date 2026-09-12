@@ -11,28 +11,43 @@ export interface PlayerHandProps {
   onToggle?: (r: Resource, delta: 1 | -1) => void;
 }
 
+const MAX_SHOWN = 10;
+
+/** The player's hand as physical card stacks, one row per resource. */
 export function PlayerHand({ resources, selectable, selected, onToggle }: PlayerHandProps): React.JSX.Element {
   return (
     <div className="hand">
       {RESOURCES.map((r) => {
         const count = resources[r];
         const sel = selected?.[r] ?? 0;
+        const shown = Math.min(count, MAX_SHOWN);
+        const label = RESOURCE_LABEL[r][0].toUpperCase() + RESOURCE_LABEL[r].slice(1);
         return (
-          <div key={r} data-hand-card={r} className={`hand-card ${count === 0 ? 'empty' : ''} ${sel > 0 ? 'selected' : ''}`}>
-            <ResourceIcon resource={r} size={48} />
-            <div className="hand-label">{RESOURCE_LABEL[r][0].toUpperCase() + RESOURCE_LABEL[r].slice(1)}</div>
-            <div className="hand-count">{count}</div>
-            {selectable && count > 0 && (
-              <div className="hand-select">
-                <button className="btn tiny" onClick={() => onToggle?.(r, -1)} disabled={sel === 0} aria-label={`Remove ${r}`}>
-                  −
-                </button>
-                <span>{sel}</span>
-                <button className="btn tiny" onClick={() => onToggle?.(r, 1)} disabled={sel >= count} aria-label={`Add ${r}`}>
-                  +
-                </button>
-              </div>
-            )}
+          <div key={r} data-hand-card={r} className={`hand-row ${count === 0 ? 'empty' : ''} ${sel > 0 ? 'selected' : ''}`}>
+            <div className="hand-row-head">
+              <span className="hand-label">{label}</span>
+              <span className="hand-count">{count}</span>
+            </div>
+            <div className="hand-stack" style={{ height: 58 }}>
+              {count === 0 && <div className="hand-slot" />}
+              {Array.from({ length: shown }, (_, i) => {
+                const isSelected = i >= shown - sel;
+                return (
+                  <button
+                    key={i}
+                    type="button"
+                    className={`hand-stack-card ${isSelected ? 'picked' : ''}`}
+                    style={{ left: i * 16, zIndex: i }}
+                    disabled={!selectable}
+                    title={selectable ? (isSelected ? 'Keep this card' : 'Discard this card') : label}
+                    onClick={() => onToggle?.(r, isSelected ? -1 : 1)}
+                  >
+                    <ResourceIcon resource={r} size={40} />
+                  </button>
+                );
+              })}
+              {count > MAX_SHOWN && <span className="hand-more" style={{ left: shown * 16 + 44 }}>+{count - MAX_SHOWN}</span>}
+            </div>
           </div>
         );
       })}

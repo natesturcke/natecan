@@ -91,6 +91,7 @@ export function DiceOverlay({ roll, onDone }: { roll: DiceRoll | null; onDone: (
   const settled = stage !== 'tumble';
   return (
     <div className={`dice-overlay stage-${stage}`} aria-live="polite">
+      <div className="dice-backdrop" />
       <div className="dice-row">
         <Die value={roll.dice[0]} color="yellow" settled={settled} spin={spin} />
         <Die value={roll.dice[1]} color="red" settled={settled} spin={spin + 2} />

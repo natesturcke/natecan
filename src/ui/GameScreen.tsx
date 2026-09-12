@@ -12,7 +12,13 @@ import { PhaserBoard } from '@/board-phaser/PhaserBoard';
 import { NO_HIGHLIGHTS, toBoardView, type Ghost, type Highlights } from '@/board-phaser/view';
 import { ActionBar } from './ActionBar';
 import { DevCardPanel } from './DevCardPanel';
-import { describeAction, type Dialog, type Mode, type Pending } from './interaction';
+import { anchorFromEvent, describeAction, type Dialog, type Mode, type Pending } from './interaction';
+import { ConfirmPopover } from './ConfirmPopover';
+import { DiceOverlay, type DiceRoll } from './DiceOverlay';
+import { TileTooltip, type TileHover } from './TileTooltip';
+import { PieceTooltip, type PieceHover } from './PieceTooltip';
+import { CornerTooltip } from './CornerTooltip';
+import { bagText as bagWords } from './text';
 import { narrate, type LogLine } from './narrate';
 import { PlayerHand } from './PlayerHand';
 import { PlayerStrip } from './PlayerStrip';
@@ -90,6 +96,11 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
   const [discardPick, setDiscardPick] = useState<ResourceBag>(bag());
   const [stealPick, setStealPick] = useState<PlayerId | null>(null);
   const [fast, setFast] = useState(false);
+  const [ghostPos, setGhostPos] = useState<{ x: number; y: number } | null>(null);
+  const [hover, setHover] = useState<{ kind: 'vertex' | 'edge' | 'hex'; id: number; x: number; y: number } | null>(null);
+  const [diceRoll, setDiceRoll] = useState<DiceRoll | null>(null);
+  const [tileHover, setTileHover] = useState<TileHover | null>(null);
+  const [pieceHover, setPieceHover] = useState<PieceHover | null>(null);
 
   const yourMove = state.phase.kind !== 'ended' && currentActor(state) === human;
   const legal = useMemo(() => (yourMove ? legalActions(state, human) : []), [state, human, yourMove]);
@@ -131,9 +142,14 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
     [controller],
   );
 
-  const select = useCallback((action: Action, note?: string) => {
-    setPending({ action, question: describeAction(action), note });
+  const select = useCallback((action: Action, note?: string, anchor?: { x: number; y: number } | null) => {
+    const boardTarget = ['SETUP_PLACE_SETTLEMENT', 'SETUP_PLACE_ROAD', 'BUILD_ROAD', 'BUILD_SETTLEMENT', 'BUILD_CITY', 'MOVE_ROBBER'].includes(action.type);
+    setPending({ action, question: describeAction(action), note, anchor: anchor ?? null, anchorFromBoard: boardTarget });
   }, []);
+  const cancelPending = useCallback(() => setPending(null), []);
+  const confirmPending = useCallback(() => {
+    if (pending) controller.dispatch(pending.action);
+  }, [controller, pending]);
 
   const find = useCallback(
     (pred: (a: Action) => boolean): Action | undefined => legal.find(pred),
@@ -175,6 +191,40 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
     return lines.slice(-80);
   }, [history, state, human]);
 
+  // Show a physical dice roll whenever a diceRolled event lands, followed by its outcome.
+  useEffect(() => {
+    const last = history.at(-1);
+    if (!last) return;
+    const rolled = last.events.find((e) => e.type === 'diceRolled');
+    if (!rolled || rolled.type !== 'diceRolled') return;
+    const who = rolled.player === human ? 'You' : state.players[rolled.player].name;
+    const outcome: string[] = [];
+    const produced = last.events.find((e) => e.type === 'resourcesProduced');
+    if (produced && produced.type === 'resourcesProduced') {
+      produced.gains.forEach((g, p) => {
+        if (Object.values(g).some((n) => n > 0)) outcome.push(`${p === human ? 'You' : state.players[p].name} got ${bagWords(g)}`);
+      });
+      if (outcome.length === 0) outcome.push('Nobody produced anything.');
+    } else if (rolled.total === 7) {
+      const discards = last.events.find((e) => e.type === 'discardRequired');
+      outcome.push(discards && discards.type === 'discardRequired' ? `A 7! ${discards.players.map((p) => (p === human ? 'You' : state.players[p].name)).join(', ')} must discard half.` : 'A 7! The robber moves.');
+    }
+    setDiceRoll({ id: history.length, dice: rolled.dice, who, outcome });
+  }, [history, history.length, human, state.players]);
+  const clearDice = useCallback(() => setDiceRoll(null), []);
+
+  const hoverText = useMemo(() => {
+    if (!hover || pending) return null;
+    const { phase } = state;
+    if (phase.kind === 'setup') return hover.kind === 'vertex' ? 'Place your settlement here' : 'Place your road here';
+    if (phase.kind === 'moveRobber') return 'Move the robber here';
+    if (phase.kind === 'roadBuilding') return 'Place a free road here';
+    if (mode === 'road') return 'Build a road here';
+    if (mode === 'settlement') return 'Build a settlement here';
+    if (mode === 'city') return 'Upgrade to a city';
+    return null;
+  }, [hover, pending, state, mode]);
+
   const prompt = describeStep(state, human, mode, pending);
 
   // ----- prompt bar buttons -----
@@ -183,13 +233,12 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
   if (phase.kind === 'ended') {
     buttons.push({ label: 'Back to menu', onClick: onQuit, primary: true });
   } else if (pending) {
-    buttons.push({ label: 'Confirm', onClick: () => dispatch(pending.action), primary: true });
-    buttons.push({ label: 'Cancel', onClick: () => setPending(null) });
+    // Confirm and Cancel live in the popover next to the selection.
   } else if (yourMove) {
     switch (phase.kind) {
       case 'preRoll':
         buttons.push({ label: 'Roll the dice', onClick: () => dispatch({ player: human, type: 'ROLL_DICE' }), primary: true });
-        if (legal.some((a) => a.type === 'PLAY_KNIGHT')) buttons.push({ label: 'Play Knight first', onClick: () => select({ player: human, type: 'PLAY_KNIGHT' }, 'You will move the robber, then roll.') });
+        if (legal.some((a) => a.type === 'PLAY_KNIGHT')) buttons.push({ label: 'Play Knight first', onClick: (e) => select({ player: human, type: 'PLAY_KNIGHT' }, 'You will move the robber, then roll.', anchorFromEvent(e)) });
         break;
       case 'discard': {
         const need = discardCount(me.resources, DISCARD_THRESHOLD);
@@ -218,7 +267,7 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
         if (mode !== 'idle') buttons.push({ label: 'Cancel', onClick: () => setMode('idle') });
         else {
           const canBuild = legal.some((a) => a.type.startsWith('BUILD_') || a.type === 'BUY_DEV_CARD');
-          buttons.push({ label: 'End turn', onClick: () => select({ player: human, type: 'END_TURN' }, canBuild ? 'You can still afford to build something.' : undefined), primary: !canBuild });
+          buttons.push({ label: 'End turn', onClick: (e) => select({ player: human, type: 'END_TURN' }, canBuild ? 'You can still afford to build something.' : undefined, anchorFromEvent(e)), primary: !canBuild });
         }
         break;
       default:
@@ -228,13 +277,13 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
     buttons.push({ label: fast ? 'Normal speed' : 'Skip ahead', onClick: () => setFast(!fast) });
   }
 
-  const onPlayDev = (card: DevCard) => {
+  const onPlayDev = (card: DevCard, e: React.MouseEvent<HTMLButtonElement>) => {
     switch (card) {
       case 'knight':
-        select({ player: human, type: 'PLAY_KNIGHT' }, 'You will move the robber and steal a card.');
+        select({ player: human, type: 'PLAY_KNIGHT' }, 'You will move the robber and steal a card.', anchorFromEvent(e));
         break;
       case 'roadBuilding':
-        select({ player: human, type: 'PLAY_ROAD_BUILDING' }, 'You will place two roads for free.');
+        select({ player: human, type: 'PLAY_ROAD_BUILDING' }, 'You will place two roads for free.', anchorFromEvent(e));
         break;
       case 'yearOfPlenty':
         setDialog({ kind: 'yearOfPlenty' });
@@ -258,10 +307,30 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
 
   return (
     <div className="game-screen">
-      <PromptBar prompt={prompt} buttons={buttons} />
       <div className="game-body">
         <div className="board-area">
-          <PhaserBoard view={view} highlights={highlights} ghost={ghost} onVertexClick={onVertexClick} onEdgeClick={onEdgeClick} onHexClick={onHexClick} />
+          <PhaserBoard
+            view={view}
+            highlights={highlights}
+            ghost={ghost}
+            onVertexClick={onVertexClick}
+            onEdgeClick={onEdgeClick}
+            onHexClick={onHexClick}
+            onGhostPosition={setGhostPos}
+            onHover={setHover}
+            onTileHover={setTileHover}
+            onPieceHover={setPieceHover}
+          />
+          {!pending && <PromptBar prompt={prompt} buttons={buttons} floating />}
+          {hover && hoverText && hover.kind === 'vertex' && mode !== 'city' && <CornerTooltip state={state} vertex={hover.id} action={hoverText} x={hover.x} y={hover.y} />}
+          {hover && hoverText && (hover.kind !== 'vertex' || mode === 'city') && (
+            <div className="hover-tip" style={{ left: hover.x, top: hover.y }}>
+              {hoverText}
+            </div>
+          )}
+          {pieceHover && !hover && !pending && <PieceTooltip state={state} human={human} hover={pieceHover} />}
+          {tileHover && !pieceHover && !hover && !pending && <TileTooltip state={state} human={human} hover={tileHover} />}
+          <DiceOverlay roll={diceRoll} onDone={clearDice} />
         </div>
         <aside className="sidebar">
           <PlayerStrip state={state} human={human} />
@@ -276,7 +345,7 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
               setPending(null);
               setMode(m);
             }}
-            onBuyDev={() => select({ player: human, type: 'BUY_DEV_CARD' }, 'Costs 1 ore, 1 grain, 1 wool. The card is drawn at random.')}
+            onBuyDev={(e) => select({ player: human, type: 'BUY_DEV_CARD' }, 'Costs 1 ore, 1 grain, 1 wool. The card is drawn at random.', anchorFromEvent(e))}
             onMaritime={() => setDialog({ kind: 'maritime' })}
             onTrade={() => setDialog({ kind: 'trade' })}
             onRules={() => setDialog({ kind: 'rules' })}
@@ -289,6 +358,16 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
         </aside>
       </div>
 
+      {pending && (
+        <ConfirmPopover
+          anchor={pending.anchorFromBoard ? ghostPos : (pending.anchor ?? null)}
+          question={pending.question}
+          note={pending.note}
+          confirmLabel={pending.action.type === 'END_TURN' ? 'End turn' : 'Confirm'}
+          onConfirm={confirmPending}
+          onCancel={cancelPending}
+        />
+      )}
       {dialog.kind === 'rules' && <RulesDrawer onClose={() => setDialog({ kind: 'none' })} />}
       {dialog.kind === 'maritime' && (
         <MaritimeDialog state={state} human={human} onClose={() => setDialog({ kind: 'none' })} onConfirm={(give, receive) => dispatch({ player: human, type: 'MARITIME_TRADE', give, receive })} />

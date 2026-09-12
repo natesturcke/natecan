@@ -46,6 +46,17 @@ export const TILE_KEYS: Record<Terrain, string> = {
   desert: 'hex-desert',
 };
 
+/**
+ * Each terrain has up to this many alternative looks so tiles of the same type do not
+ * repeat exactly. Variant 1 is the base key (`hex-forest`); others are `hex-forest-2`, `hex-forest-3`.
+ */
+export const TILE_VARIANTS = 3;
+
+export function tileVariantKey(terrain: Terrain, variant: number): string {
+  const base = TILE_KEYS[terrain];
+  return variant <= 1 ? base : `${base}-${variant}`;
+}
+
 export const HARBOR_KEYS: Record<HarborKind, string> = {
   generic: 'harbor-generic',
   brick: 'harbor-brick',
@@ -95,9 +106,11 @@ export function tokenKey(n: number): string {
 export function allAssetPaths(): { key: string; path: string }[] {
   const keys = [
     ...Object.values(TILE_KEYS),
+    ...(Object.keys(TILE_KEYS) as Terrain[]).flatMap((t) => Array.from({ length: TILE_VARIANTS - 1 }, (_, i) => tileVariantKey(t, i + 2))),
     ...Object.values(HARBOR_KEYS),
     ...Object.values(ROAD_KEYS),
     ...Object.values(PIECE_KEYS),
+    ...[1, 2, 3, 4].flatMap((n) => [`${PIECE_KEYS.settlement}-${n}`, `${PIECE_KEYS.city}-${n}`]),
     ...Object.values(CARD_KEYS),
     ...Object.values(DEV_CARD_KEYS),
     ...Object.values(MISC_KEYS),

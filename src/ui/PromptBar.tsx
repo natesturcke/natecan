@@ -2,15 +2,15 @@ import type { StepPrompt } from './prompts';
 
 export interface PromptButton {
   label: string;
-  onClick: () => void;
+  onClick: (e: React.MouseEvent<HTMLButtonElement>) => void;
   primary?: boolean;
   disabled?: boolean;
   title?: string;
 }
 
-export function PromptBar({ prompt, buttons }: { prompt: StepPrompt; buttons: PromptButton[] }): React.JSX.Element {
+export function PromptBar({ prompt, buttons, floating }: { prompt: StepPrompt; buttons: PromptButton[]; floating?: boolean }): React.JSX.Element {
   return (
-    <div className={`prompt-bar ${prompt.yourMove ? 'yours' : 'theirs'}`} role="status" aria-live="polite">
+    <div className={`${floating ? 'instruction-card' : 'prompt-bar'} ${prompt.yourMove ? 'yours' : 'theirs'}`} role="status" aria-live="polite">
       <div className="prompt-text">
         <div className="prompt-title">{prompt.title}</div>
         {prompt.detail && <div className="prompt-detail">{prompt.detail}</div>}

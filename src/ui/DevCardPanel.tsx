@@ -2,7 +2,7 @@ import type { DevCard, GameState, PlayerId } from '@/engine/types';
 import { validateAction } from '@/engine/legal';
 import { DEV_DESCRIPTION, DEV_LABEL } from './text';
 
-export function DevCardPanel({ state, human, onPlay }: { state: GameState; human: PlayerId; onPlay: (card: DevCard) => void }): React.JSX.Element | null {
+export function DevCardPanel({ state, human, onPlay }: { state: GameState; human: PlayerId; onPlay: (card: DevCard, e: React.MouseEvent<HTMLButtonElement>) => void }): React.JSX.Element | null {
   const me = state.players[human];
   if (me.devCards.length === 0 && me.newDevCards.length === 0) return null;
   const counts = new Map<DevCard, number>();
@@ -36,7 +36,7 @@ export function DevCardPanel({ state, human, onPlay }: { state: GameState; human
               <b>{DEV_LABEL[card]}</b> ×{n}
             </span>
             {card !== 'victoryPoint' && (
-              <button className="btn small" disabled={!!reason} title={reason ?? DEV_DESCRIPTION[card]} onClick={() => onPlay(card)}>
+              <button className="btn small" disabled={!!reason} title={reason ?? DEV_DESCRIPTION[card]} onClick={(e) => onPlay(card, e)}>
                 Play
               </button>
             )}

@@ -10,7 +10,7 @@ export interface ActionBarProps {
   human: PlayerId;
   mode: Mode;
   onMode: (mode: Mode) => void;
-  onBuyDev: () => void;
+  onBuyDev: (e: React.MouseEvent<HTMLButtonElement>) => void;
   onMaritime: () => void;
   onTrade: () => void;
   onRules: () => void;

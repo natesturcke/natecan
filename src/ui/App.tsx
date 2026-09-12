@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import type { Action } from '@/engine/actions';
+import type { GameEvent } from '@/engine/events';
 import type { GameState, PlayerId } from '@/engine/types';
 import { createBot } from '@/bots/registry';
 import '@/bots/register-all';
@@ -9,7 +9,9 @@ import { GameController } from '@/game/GameController';
 import { GameScreen } from './GameScreen';
 import { MainMenu, type MenuChoice } from './MainMenu';
 
-function botDelay(_action: Action | null, state: GameState): number {
+function botDelay(state: GameState, lastEvents: readonly GameEvent[]): number {
+  // Leave time for the dice animation to play out before the next bot action.
+  if (lastEvents.some((e) => e.type === 'diceRolled')) return 5000;
   switch (state.phase.kind) {
     case 'setup':
       return 550;

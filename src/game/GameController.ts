@@ -14,7 +14,7 @@ export interface HistoryEntry {
 export interface ControllerOptions {
   runner: BotRunner;
   /** Delay before a bot acts, per action type, for readability. 0 headless. */
-  botDelayMs?: (action: Action | null, state: GameState) => number;
+  botDelayMs?: (state: GameState, lastEvents: readonly GameEvent[]) => number;
   maxActions?: number;
 }
 
@@ -92,7 +92,7 @@ export class GameController {
         const actor = currentActor(before);
         const legal = legalActions(before, actor);
         if (legal.length === 0) throw new Error(`Bot ${actor} has no legal actions in phase ${before.phase.kind}`);
-        const delay = this.fastForward ? 0 : (this.opts.botDelayMs?.(null, before) ?? 0);
+        const delay = this.fastForward ? 0 : (this.opts.botDelayMs?.(before, this._lastEvents) ?? 0);
         if (delay > 0) await new Promise((r) => setTimeout(r, delay));
         if (this.disposed || this._state !== before) break;
         const action = await this.opts.runner.decide(actor, before, legal);

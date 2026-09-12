@@ -14,7 +14,8 @@ import {
   ROAD_IMAGE,
   ROAD_KEYS,
   TILE_IMAGE,
-  TILE_KEYS,
+  TILE_VARIANTS,
+  tileVariantKey,
   TOKEN_IMAGE,
   tokenKey,
 } from './assets';
@@ -104,6 +105,7 @@ export class BoardScene extends Phaser.Scene {
     this.highlightGfx = this.add.graphics().setDepth(DEPTH.highlight);
     this.hoverGfx = this.add.graphics().setDepth(DEPTH.highlight + 1);
     this.createZones();
+    this.createInfoZones();
 
     this.unsubscribe.push(this.bridge.onScene('view', (v) => this.setView(v)));
     this.unsubscribe.push(this.bridge.onScene('highlights', (h) => this.setHighlights(h)));
@@ -113,6 +115,7 @@ export class BoardScene extends Phaser.Scene {
       const z = Math.min(this.scale.width / width, this.scale.height / height);
       this.cameras.main.setZoom(z);
       this.cameras.main.centerOn((b.minX + b.maxX) / 2, (b.minY + b.maxY) / 2);
+      this.emitGhostPosition();
     });
     this.bridge.emit('ready', undefined);
   }
@@ -124,6 +127,18 @@ export class BoardScene extends Phaser.Scene {
 
   private has(key: string): boolean {
     return this.textures.exists(key);
+  }
+
+  /** Picks an available variant of the terrain art for this hex, or null if none exist. */
+  private pickTileKey(terrain: Terrain, hex: number): string | null {
+    const available: string[] = [];
+    for (let v = 1; v <= TILE_VARIANTS; v++) {
+      const k = tileVariantKey(terrain, v);
+      if (this.has(k)) available.push(k);
+    }
+    if (available.length === 0) return null;
+    // Deterministic spread: neighbouring hexes of the same terrain get different variants.
+    return available[(hex * 5 + 3) % available.length];
   }
 
   // ---------- static layers ----------
@@ -153,13 +168,17 @@ export class BoardScene extends Phaser.Scene {
     for (const h of order) {
       const tile = view.hexes[h];
       const c = HEX_PX[h];
-      const key = TILE_KEYS[tile.terrain];
+      const key = this.pickTileKey(tile.terrain, h);
       const depth = DEPTH.tile + c.y * 0.001;
-      if (this.has(key)) {
+      if (key) {
+        // Subtle per-hex brightness jitter so identical variants still read as distinct.
+        const jitter = 0.94 + ((h * 7919) % 13) / 100;
+        const shade = Math.round(255 * Math.min(1, jitter));
         const img = this.add
           .image(c.x, c.y, key)
           .setOrigin(TILE_IMAGE.faceCenterX / TILE_IMAGE.width, TILE_IMAGE.faceCenterY / TILE_IMAGE.height)
           .setScale(DISPLAY_SCALE)
+          .setTint((shade << 16) | (shade << 8) | shade)
           .setDepth(depth);
         this.tiles.push(img);
       } else {
@@ -193,7 +212,6 @@ export class BoardScene extends Phaser.Scene {
           .setOrigin(HARBOR_IMAGE.anchorX / HARBOR_IMAGE.width, HARBOR_IMAGE.anchorY / HARBOR_IMAGE.height)
           .setScale(DISPLAY_SCALE * 0.9)
           .setDepth(depth);
-        if (eg.outward.x < -0.2) img.setFlipX(true);
         this.harborObjs.push(img);
       } else {
         this.harborObjs.push(this.drawFallbackHarbor(x, y, harbor.kind, depth));
@@ -293,20 +311,30 @@ export class BoardScene extends Phaser.Scene {
   private makeBuilding(v: number, kind: 'settlement' | 'city', owner: number, colors: readonly string[], alpha = 1): Phaser.GameObjects.GameObject {
     const p = VERTEX_PX[v];
     const tint = colorInt(colors[owner]);
-    const key = PIECE_KEYS[kind];
     const depth = DEPTH.piece + p.y * 0.001 + 0.0001;
-    const scale = kind === 'city' ? 0.62 : 0.5;
+    const scale = kind === 'city' ? 0.95 : 0.78;
+    // Per-player architecture when available (full colour, no tint); neutral tinted art otherwise.
+    const styled = `${PIECE_KEYS[kind]}-${owner + 1}`;
+    const key = this.has(styled) ? styled : PIECE_KEYS[kind];
     if (this.has(key)) {
-      return this.add
-        .image(p.x, p.y, key)
+      const img = this.add
+        .image(0, 0, key)
         .setOrigin(PIECE_IMAGE.anchorX / PIECE_IMAGE.width, PIECE_IMAGE.anchorY / PIECE_IMAGE.height)
-        .setScale(DISPLAY_SCALE * scale * 1.15)
-        .setTint(tint)
-        .setAlpha(alpha)
-        .setDepth(depth);
+        .setScale(DISPLAY_SCALE * scale * 1.15);
+      if (key !== styled) img.setTint(tint);
+      // Coloured base plate so every town is easy to spot and attribute at a glance.
+      const rx = HEX_R * (kind === 'city' ? 0.34 : 0.28);
+      const base = this.add.graphics();
+      base.fillStyle(0x000000, 0.28);
+      base.fillEllipse(0, HEX_R * 0.02, rx * 2.2, rx * 2.2 * CAMERA_K);
+      base.lineStyle(4, 0xffffff, 0.85);
+      base.strokeEllipse(0, 0, rx * 2, rx * 2 * CAMERA_K);
+      base.lineStyle(3, tint, 1);
+      base.strokeEllipse(0, 0, rx * 2 - 6, (rx * 2 - 6) * CAMERA_K);
+      return this.add.container(p.x, p.y, [base, img]).setAlpha(alpha).setDepth(depth);
     }
     const g = this.add.graphics().setDepth(depth).setAlpha(alpha);
-    const s = HEX_R * 0.18 * (kind === 'city' ? 1.35 : 1);
+    const s = HEX_R * 0.26 * (kind === 'city' ? 1.35 : 1);
     g.fillStyle(tint, 1);
     g.lineStyle(2, darken(tint, 0.55), 1);
     // house: body + roof
@@ -443,10 +471,50 @@ export class BoardScene extends Phaser.Scene {
   }
 
   private hovered: { kind: 'vertex' | 'edge' | 'hex'; id: number } | null = null;
+  private infoZones: Phaser.GameObjects.Zone[] = [];
+
+  /** Always-on, lowest-priority hex zones that only report which tile the cursor is over. */
+  private createInfoZones(): void {
+    for (let h = 0; h < HEX_COUNT; h++) {
+      const poly = hexPolygon(h);
+      const c = HEX_PX[h];
+      const w = Math.sqrt(3) * HEX_R;
+      const hh = 2 * HEX_R * CAMERA_K;
+      const zone = this.add.zone(c.x, c.y, w, hh).setDepth(DEPTH.zone - 3);
+      const local = poly.map((p) => new Phaser.Geom.Point(p.x - c.x + w / 2, p.y - c.y + hh / 2));
+      zone.setInteractive(new Phaser.Geom.Polygon(local), Phaser.Geom.Polygon.Contains);
+      zone.on('pointermove', (pointer: Phaser.Input.Pointer) => {
+        const cam = this.cameras.main;
+        this.bridge.emit('tileHover', { hex: h, x: (pointer.worldX - cam.worldView.x) * cam.zoom, y: (pointer.worldY - cam.worldView.y) * cam.zoom });
+      });
+      zone.on('pointerout', () => this.bridge.emit('tileHover', null));
+      this.infoZones.push(zone);
+    }
+    for (let v = 0; v < VERTEX_COUNT; v++) {
+      const p = VERTEX_PX[v];
+      const zone = this.add.zone(p.x, p.y - HEX_R * 0.12, HEX_R * 0.42, HEX_R * 0.42).setDepth(DEPTH.zone - 2.5);
+      zone.setInteractive(new Phaser.Geom.Circle(HEX_R * 0.21, HEX_R * 0.21, HEX_R * 0.21), Phaser.Geom.Circle.Contains);
+      zone.on('pointermove', (pointer: Phaser.Input.Pointer) => {
+        if (!this.view?.buildings[v]) return;
+        const cam = this.cameras.main;
+        this.bridge.emit('pieceHover', { vertex: v, x: (pointer.worldX - cam.worldView.x) * cam.zoom, y: (pointer.worldY - cam.worldView.y) * cam.zoom });
+      });
+      zone.on('pointerout', () => this.bridge.emit('pieceHover', null));
+      this.infoZones.push(zone);
+    }
+    this.input.setTopOnly(false);
+  }
 
   private hover(target: { kind: 'vertex' | 'edge' | 'hex'; id: number } | null): void {
     this.hovered = target;
     this.input.setDefaultCursor(target ? 'pointer' : 'default');
+    if (!target) {
+      this.bridge.emit('hover', null);
+      return;
+    }
+    const world = target.kind === 'vertex' ? VERTEX_PX[target.id] : target.kind === 'edge' ? EDGE_PX[target.id].mid : HEX_PX[target.id];
+    const cam = this.cameras.main;
+    this.bridge.emit('hover', { ...target, x: (world.x - cam.worldView.x) * cam.zoom, y: (world.y - cam.worldView.y) * cam.zoom });
   }
 
   private setHighlights(h: Highlights): void {
@@ -518,6 +586,24 @@ export class BoardScene extends Phaser.Scene {
     const t = this.ghostObj as unknown as { setDepth?: (d: number) => void };
     t.setDepth?.(DEPTH.highlight - 1);
     this.tweens.add({ targets: this.ghostObj, alpha: { from: 0.35, to: 0.8 }, duration: 700, yoyo: true, repeat: -1 });
+    this.emitGhostPosition();
+  }
+
+  /** Tells React where the ghost sits on the canvas so a confirm popover can anchor to it. */
+  private emitGhostPosition(): void {
+    const ghost = this.ghost;
+    if (!ghost) {
+      this.bridge.emit('ghostPosition', null);
+      return;
+    }
+    let world: Point;
+    if (ghost.kind === 'road') world = EDGE_PX[ghost.edge].mid;
+    else if (ghost.kind === 'robber') world = HEX_PX[ghost.hex];
+    else world = VERTEX_PX[ghost.vertex];
+    const cam = this.cameras.main;
+    const x = (world.x - cam.worldView.x) * cam.zoom;
+    const y = (world.y - cam.worldView.y) * cam.zoom;
+    this.bridge.emit('ghostPosition', { x, y });
   }
 }
 

@@ -12,6 +12,13 @@ export interface PhaserBoardProps {
   onVertexClick?: (vertex: number) => void;
   onEdgeClick?: (edge: number) => void;
   onHexClick?: (hex: number) => void;
+  /** Viewport coordinates of the ghost target, for anchoring a confirm popover. */
+  onGhostPosition?: (pos: { x: number; y: number } | null) => void;
+  /** Cursor over a legal target, in viewport coordinates. */
+  onHover?: (hover: { kind: 'vertex' | 'edge' | 'hex'; id: number; x: number; y: number } | null) => void;
+  /** Cursor over any tile, in viewport coordinates. */
+  onTileHover?: (hover: { hex: number; x: number; y: number } | null) => void;
+  onPieceHover?: (hover: { vertex: number; x: number; y: number } | null) => void;
 }
 
 let availableAssetsPromise: Promise<{ key: string; path: string }[]> | null = null;
@@ -70,6 +77,42 @@ export function PhaserBoard(props: PhaserBoardProps): React.JSX.Element {
       bridge.onReact('vertexClick', (v) => callbacks.current.onVertexClick?.(v)),
       bridge.onReact('edgeClick', (e) => callbacks.current.onEdgeClick?.(e)),
       bridge.onReact('hexClick', (h) => callbacks.current.onHexClick?.(h)),
+      bridge.onReact('hover', (h) => {
+        if (!h || !game) {
+          callbacks.current.onHover?.(null);
+          return;
+        }
+        const rect = game.canvas.getBoundingClientRect();
+        const scale = rect.width / game.scale.width;
+        callbacks.current.onHover?.({ ...h, x: rect.left + h.x * scale, y: rect.top + h.y * scale });
+      }),
+      bridge.onReact('tileHover', (h) => {
+        if (!h || !game) {
+          callbacks.current.onTileHover?.(null);
+          return;
+        }
+        const rect = game.canvas.getBoundingClientRect();
+        const scale = rect.width / game.scale.width;
+        callbacks.current.onTileHover?.({ hex: h.hex, x: rect.left + h.x * scale, y: rect.top + h.y * scale });
+      }),
+      bridge.onReact('pieceHover', (h) => {
+        if (!h || !game) {
+          callbacks.current.onPieceHover?.(null);
+          return;
+        }
+        const rect = game.canvas.getBoundingClientRect();
+        const scale = rect.width / game.scale.width;
+        callbacks.current.onPieceHover?.({ vertex: h.vertex, x: rect.left + h.x * scale, y: rect.top + h.y * scale });
+      }),
+      bridge.onReact('ghostPosition', (pos) => {
+        if (!pos || !game) {
+          callbacks.current.onGhostPosition?.(null);
+          return;
+        }
+        const rect = game.canvas.getBoundingClientRect();
+        const scale = rect.width / game.scale.width;
+        callbacks.current.onGhostPosition?.({ x: rect.left + pos.x * scale, y: rect.top + pos.y * scale });
+      }),
     ];
     return () => {
       cancelled = true;

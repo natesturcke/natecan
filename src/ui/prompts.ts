@@ -102,10 +102,26 @@ export function describeStep(state: GameState, human: PlayerId, mode: Mode, pend
       const roll = state.turn.lastRoll;
       const rolled = roll ? `You rolled ${roll[0] + roll[1]}. ` : '';
       const legal = legalActions(state, human);
-      const canBuild = legal.some((a) => a.type.startsWith('BUILD_') || a.type === 'BUY_DEV_CARD');
+      const can: string[] = [];
+      const cannot: string[] = [];
+      const check = (kind: 'road' | 'settlement' | 'city' | 'devCard', label: string) => {
+        const why = buildDisabledReason(state, human, kind);
+        if (why) cannot.push(`${label} (${why.toLowerCase()})`);
+        else can.push(label);
+      };
+      check('road', 'build a road');
+      check('settlement', 'build a settlement');
+      check('city', 'build a city');
+      check('devCard', 'buy a development card');
+      if (legal.some((a) => a.type === 'MARITIME_TRADE')) can.push('trade with the bank');
+      if (bagTotal(me.resources) > 0) can.push('offer a trade');
+      const playable = me.devCards.filter((c) => c !== 'victoryPoint');
+      if (playable.length > 0 && !state.turn.devPlayed) can.push('play a development card');
+      const canLine = can.length > 0 ? `You can ${can.join(', ')}.` : 'You cannot build anything yet.';
+      const cannotLine = cannot.length > 0 ? ` Not yet: ${cannot.join('; ')}.` : '';
       return {
-        title: 'Trade or build, then end your turn.',
-        detail: `${rolled}${canBuild ? 'You can afford to build something.' : `You hold ${bagTotal(me.resources)} cards.`}`,
+        title: 'Your turn: trade or build, then end your turn.',
+        detail: `${rolled}${canLine}${cannotLine}`,
         yourMove: true,
       };
     }

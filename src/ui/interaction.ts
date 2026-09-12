@@ -10,6 +10,20 @@ export interface Pending {
   question: string;
   /** Optional extra note, e.g. costs. */
   note?: string;
+  /** Viewport point the confirm popover anchors to (a board piece or the button pressed). */
+  anchor?: { x: number; y: number } | null;
+  /** Board selections get their anchor from the Phaser ghost position. */
+  anchorFromBoard?: boolean;
+}
+
+export function anchorFromEvent(e?: { clientX: number; clientY: number; currentTarget?: EventTarget | null }): { x: number; y: number } | null {
+  if (!e) return null;
+  const el = e.currentTarget as HTMLElement | null;
+  if (el && typeof el.getBoundingClientRect === 'function') {
+    const r = el.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top };
+  }
+  return { x: e.clientX, y: e.clientY };
 }
 
 export type Dialog =

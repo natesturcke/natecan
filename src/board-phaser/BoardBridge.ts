@@ -12,6 +12,14 @@ export interface FromScene {
   vertexClick: number;
   edgeClick: number;
   hexClick: number;
+  /** Canvas-pixel position of the current ghost target, or null when there is none. */
+  ghostPosition: { x: number; y: number } | null;
+  /** Cursor over a legal target: canvas-pixel position and what it is. */
+  hover: { kind: 'vertex' | 'edge' | 'hex'; id: number; x: number; y: number } | null;
+  /** Cursor over any hex tile (for the info tooltip), canvas pixels. */
+  tileHover: { hex: number; x: number; y: number } | null;
+  /** Cursor over a settlement or city, canvas pixels. */
+  pieceHover: { vertex: number; x: number; y: number } | null;
   ready: void;
 }
 

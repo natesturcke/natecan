@@ -8,9 +8,19 @@ export interface PromptButton {
   title?: string;
 }
 
-export function PromptBar({ prompt, buttons, floating }: { prompt: StepPrompt; buttons: PromptButton[]; floating?: boolean }): React.JSX.Element {
+export interface PromptBarProps {
+  prompt: StepPrompt;
+  buttons: PromptButton[];
+  /** Render as the floating card over the board instead of a docked bar. */
+  floating?: boolean;
+  /** Floating only: sit over the middle of the board (for pure button decisions) instead of the top edge. */
+  centered?: boolean;
+}
+
+export function PromptBar({ prompt, buttons, floating, centered }: PromptBarProps): React.JSX.Element {
+  const cls = floating ? `instruction-card ${centered ? 'centered' : ''}` : 'prompt-bar';
   return (
-    <div className={`${floating ? 'instruction-card' : 'prompt-bar'} ${prompt.yourMove ? 'yours' : 'theirs'}`} role="status" aria-live="polite">
+    <div className={`${cls} ${prompt.yourMove ? 'yours' : 'theirs'}`} role="status" aria-live="polite">
       <div className="prompt-text">
         <div className="prompt-title">{prompt.title}</div>
         {prompt.detail && <div className="prompt-detail">{prompt.detail}</div>}

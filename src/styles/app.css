@@ -201,7 +201,7 @@ button.btn.on {
   overflow-y: auto;
 }
 .sidebar .player-card,
-.sidebar button.btn.build,
+.hand-panel button.btn.build,
 .sidebar .turn-log {
   background: rgba(60, 50, 38, 0.5);
 }
@@ -396,7 +396,8 @@ button.btn.on {
   border-radius: 8px;
   margin-bottom: 4px;
 }
-.action-bar {
+.action-bar,
+.build-panel {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -639,7 +640,7 @@ button.pick:disabled {
 .instruction-card {
   position: absolute;
   top: 18px;
-  left: calc(282px + (100% - 282px - 372px) / 2);
+  left: calc(330px + (100% - 330px - 372px) / 2);
   transform: translateX(-50%);
   z-index: 20;
   min-width: 320px;
@@ -660,6 +661,24 @@ button.pick:disabled {
 .instruction-card.yours {
   border-color: var(--accent);
   background: rgba(70, 52, 26, 0.62);
+}
+/* Decisions that need a button press and nothing on the board sit over the middle of the island. */
+.instruction-card.centered {
+  top: 50%;
+  transform: translate(-50%, -50%);
+  flex-direction: column;
+  text-align: center;
+  gap: 14px;
+  padding: 18px 24px;
+}
+.instruction-card.centered .prompt-title {
+  font-size: 24px;
+}
+.instruction-card.centered .prompt-detail {
+  font-size: 14px;
+}
+.instruction-card.centered .prompt-buttons {
+  justify-content: center;
 }
 .instruction-card .prompt-title {
   font-size: 20px;
@@ -718,6 +737,12 @@ button.pick:disabled {
 }
 .dice-caption {
   position: relative;
+}
+.dice-ok {
+  pointer-events: auto;
+  margin-top: 12px;
+  font-size: 15px;
+  padding: 8px 22px;
 }
 .die-face {
   box-shadow:
@@ -930,30 +955,6 @@ button.pick:disabled {
 }
 
 /* ---------- left hand: real fanned cards ---------- */
-.board-column {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-.hand-panel {
-  position: absolute;
-  top: 16px;
-  left: 16px;
-  bottom: 16px;
-  width: 300px;
-  z-index: 18;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 6px 4px;
-  overflow: visible;
-  pointer-events: none;
-}
-.hand-panel > * {
-  pointer-events: auto;
-}
 .hand-title {
   font-family: var(--font);
   font-size: 15px;
@@ -961,17 +962,44 @@ button.pick:disabled {
   text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
   margin-bottom: 2px;
 }
-.hand-fans {
+.hand-deck {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
-.hand-fan {
+.hand-arc {
+  --spread: 1;
   position: relative;
-  height: 122px;
+  height: 150px;
+  margin-top: 4px;
 }
-.hand-fan.empty {
-  opacity: 0.55;
+/* Hovering the hand fans it open a little wider and names what you hold. */
+.hand-arc:hover {
+  --spread: 1.3;
+}
+.hand-arc.empty {
+  display: grid;
+  place-items: center;
+}
+.hand-summary {
+  position: absolute;
+  left: 50%;
+  bottom: -4px;
+  transform: translateX(-50%);
+  z-index: 45;
+  white-space: nowrap;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: rgba(20, 16, 12, 0.92);
+  border: 1px solid var(--accent);
+  color: #fff4dc;
+  font-size: 12px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+.hand-arc:hover .hand-summary {
+  opacity: 1;
 }
 .card-face {
   display: block;
@@ -1008,45 +1036,66 @@ button.pick:disabled {
   font-size: 13px;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
 }
+/* Cards pivot around a point well below the fan, like a hand held at the wrist. */
 .hand-card-btn {
+  --rot: 0deg;
+  --lift: 0px;
   position: absolute;
-  top: 2px;
+  left: 50%;
+  top: 24px;
+  margin-left: -42px;
   padding: 0;
   border: none;
   background: none;
-  transform-origin: 50% 100%;
-  transition: transform 0.15s ease, filter 0.15s ease;
+  transform-origin: 50% 200%;
+  transform: rotate(calc(var(--rot) * var(--spread, 1))) translateY(var(--lift));
+  transition: transform 0.18s ease, filter 0.18s ease;
   cursor: default;
 }
 .hand-card-btn:not(:disabled) {
   cursor: pointer;
 }
 .hand-card-btn:not(:disabled):hover {
+  --lift: -18px;
   filter: brightness(1.15);
+  z-index: 40 !important;
 }
 .hand-card-btn.picked {
-  transform: translateY(-16px) !important;
+  --lift: -26px;
 }
 .hand-card-btn.picked .card-face {
   box-shadow:
     0 0 0 3px var(--accent),
     0 10px 20px rgba(0, 0, 0, 0.6);
 }
-.card-count {
-  position: absolute;
-  top: -8px;
-  z-index: 20;
-  min-width: 26px;
-  height: 26px;
-  padding: 0 7px;
-  border-radius: 13px;
-  background: var(--accent);
-  color: #241a08;
+.hand-legend {
+  display: flex;
+  justify-content: space-between;
+  gap: 4px;
+  padding: 0 2px;
+}
+.hand-chip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 7px 3px 4px;
+  border-radius: 12px;
+  background: rgba(60, 50, 38, 0.55);
+  border: 1px solid rgba(255, 236, 200, 0.2);
+}
+.hand-chip.empty {
+  opacity: 0.45;
+}
+.hand-chip.picking {
+  border-color: var(--accent);
+  background: rgba(224, 169, 74, 0.22);
+}
+.hand-chip-count {
   font-weight: 800;
   font-size: 14px;
-  display: grid;
-  place-items: center;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.6);
+  color: #fff4dc;
+  min-width: 10px;
+  text-align: center;
 }
 .dev-fan {
   margin-top: 4px;
@@ -1082,7 +1131,7 @@ button.pick:disabled {
 .instruction-card {
   position: absolute;
   top: 18px;
-  left: calc(282px + (100% - 282px - 372px) / 2);
+  left: calc(330px + (100% - 330px - 372px) / 2);
   transform: translateX(-50%);
   z-index: 20;
   min-width: 320px;
@@ -1103,6 +1152,24 @@ button.pick:disabled {
 .instruction-card.yours {
   border-color: var(--accent);
   background: rgba(70, 52, 26, 0.62);
+}
+/* Decisions that need a button press and nothing on the board sit over the middle of the island. */
+.instruction-card.centered {
+  top: 50%;
+  transform: translate(-50%, -50%);
+  flex-direction: column;
+  text-align: center;
+  gap: 14px;
+  padding: 18px 24px;
+}
+.instruction-card.centered .prompt-title {
+  font-size: 24px;
+}
+.instruction-card.centered .prompt-detail {
+  font-size: 14px;
+}
+.instruction-card.centered .prompt-buttons {
+  justify-content: center;
 }
 .instruction-card .prompt-title {
   font-size: 20px;
@@ -1161,6 +1228,12 @@ button.pick:disabled {
 }
 .dice-caption {
   position: relative;
+}
+.dice-ok {
+  pointer-events: auto;
+  margin-top: 12px;
+  font-size: 15px;
+  padding: 8px 22px;
 }
 .die-face {
   box-shadow:
@@ -1385,7 +1458,7 @@ button.pick:disabled {
   top: 16px;
   left: 16px;
   bottom: 16px;
-  width: 250px;
+  width: 300px;
   z-index: 18;
   display: flex;
   flex-direction: column;

@@ -21,7 +21,7 @@ export interface PhaserBoardProps {
   onHover?: (hover: { kind: 'vertex' | 'edge' | 'hex'; id: number; x: number; y: number } | null) => void;
   /** Cursor over any tile, in viewport coordinates. */
   onTileHover?: (hover: { hex: number; x: number; y: number } | null) => void;
-  onPieceHover?: (hover: { vertex: number; x: number; y: number } | null) => void;
+  onPieceHover?: (hover: { kind: 'vertex' | 'edge'; id: number; x: number; y: number } | null) => void;
   /** Receives a function mapping a hex id to viewport coordinates once the board is ready. */
   onProjector?: (project: (hex: number) => { x: number; y: number } | null) => void;
 }
@@ -117,7 +117,7 @@ export function PhaserBoard(props: PhaserBoardProps): React.JSX.Element {
         }
         const rect = game.canvas.getBoundingClientRect();
         const scale = rect.width / game.scale.width;
-        callbacks.current.onPieceHover?.({ vertex: h.vertex, x: rect.left + h.x * scale, y: rect.top + h.y * scale });
+        callbacks.current.onPieceHover?.({ kind: h.kind, id: h.id, x: rect.left + h.x * scale, y: rect.top + h.y * scale });
       }),
       bridge.onReact('ghostPosition', (pos) => {
         if (!pos || !game) {

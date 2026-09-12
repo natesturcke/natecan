@@ -16,6 +16,15 @@ export interface StepPrompt {
   yourMove: boolean;
 }
 
+/** "Round 2, turn 3 of 4." Turns are numbered from the first roll after setup. */
+export function turnOfRound(state: GameState): string {
+  const n = state.players.length;
+  const t = state.turn.number;
+  const round = Math.floor((t - 1) / n) + 1;
+  const pos = ((t - 1) % n) + 1;
+  return `Round ${round}, turn ${pos} of ${n}.`;
+}
+
 /**
  * Derives the prompt-bar text purely from engine state plus the UI's pending selection
  * and mode, so it can never disagree with what the engine will accept.
@@ -47,7 +56,7 @@ export function describeStep(state: GameState, human: PlayerId, mode: Mode, pend
       case 'tradeOffer':
         return { title: `${who} is considering the trade…`, yourMove: false };
       default:
-        return { title: `${who} is taking their turn…`, yourMove: false };
+        return { title: `${who} is taking their turn…`, detail: turnOfRound(state), yourMove: false };
     }
   }
 
@@ -67,7 +76,7 @@ export function describeStep(state: GameState, human: PlayerId, mode: Mode, pend
       const hasKnight = me.devCards.includes('knight') && !state.turn.devPlayed;
       return {
         title: 'Roll the dice.',
-        detail: hasKnight ? 'You may play your Knight before rolling.' : `Turn ${state.turn.number}. Every settlement next to the rolled number produces.`,
+        detail: hasKnight ? 'You may play your Knight before rolling.' : `${turnOfRound(state)} Every settlement next to the rolled number produces.`,
         yourMove: true,
       };
     }

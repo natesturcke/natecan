@@ -11,9 +11,13 @@ export interface BoardView {
 }
 
 export interface Highlights {
+  /** Clickable targets: pulse brightly. */
   vertices: readonly number[];
   edges: readonly number[];
   hexes: readonly number[];
+  /** Allowed by the rules but not affordable yet: a faint outline that only explains itself on hover. */
+  dimVertices: readonly number[];
+  dimEdges: readonly number[];
 }
 
 export type Ghost =
@@ -22,7 +26,7 @@ export type Ghost =
   | { kind: 'robber'; hex: number }
   | null;
 
-export const NO_HIGHLIGHTS: Highlights = { vertices: [], edges: [], hexes: [] };
+export const NO_HIGHLIGHTS: Highlights = { vertices: [], edges: [], hexes: [], dimVertices: [], dimEdges: [] };
 
 const cache = new WeakMap<GameState, BoardView>();
 

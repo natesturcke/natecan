@@ -3,14 +3,16 @@ import type { Action } from '@/engine/actions';
 import { bag, bagTotal } from '@/engine/bag';
 import { DISCARD_THRESHOLD } from '@/engine/constants';
 import { legalActions } from '@/engine/legal';
+import { legalCityVertices, legalRoadEdges, legalSettlementVertices } from '@/engine/rules/placement';
 import { discardCount } from '@/engine/rules/trade';
 import { currentActor } from '@/engine/state';
-import type { DevCard, GameState, PlayerId, Resource, ResourceBag } from '@/engine/types';
+import { RESOURCES, type DevCard, type GameState, type PlayerId, type Resource, type ResourceBag } from '@/engine/types';
 import type { GameController } from '@/game/GameController';
 import { useGame } from '@/game/useGame';
 import { PhaserBoard } from '@/board-phaser/PhaserBoard';
 import { NO_HIGHLIGHTS, toBoardView, type Ghost, type Highlights } from '@/board-phaser/view';
 import { ActionBar } from './ActionBar';
+import { BuildPanel } from './BuildPanel';
 import { DevCardPanel } from './DevCardPanel';
 import { anchorFromEvent, describeAction, type Dialog, type Mode, type Pending } from './interaction';
 import { ConfirmPopover } from './ConfirmPopover';
@@ -27,7 +29,7 @@ import { narrate, type LogLine } from './narrate';
 import { PlayerHand } from './PlayerHand';
 import { PlayerStrip } from './PlayerStrip';
 import { PromptBar, type PromptButton } from './PromptBar';
-import { describeStep } from './prompts';
+import { buildDisabledReason, describeStep } from './prompts';
 import { RulesDrawer } from './RulesDrawer';
 import { TurnLog } from './TurnLog';
 import { MaritimeDialog } from './dialogs/MaritimeDialog';
@@ -43,11 +45,13 @@ export interface GameScreenProps {
   onQuit: () => void;
 }
 
-function computeHighlights(state: GameState, legal: readonly Action[], mode: Mode): Highlights {
+function computeHighlights(state: GameState, legal: readonly Action[], mode: Mode, human: PlayerId): Highlights {
   const { phase } = state;
   const vertices: number[] = [];
   const edges: number[] = [];
   const hexes: number[] = [];
+  const dimVertices: number[] = [];
+  const dimEdges: number[] = [];
   const want = (type: Action['type']) => legal.filter((a) => a.type === type);
   switch (phase.kind) {
     case 'setup':
@@ -65,12 +69,21 @@ function computeHighlights(state: GameState, legal: readonly Action[], mode: Mod
       if (mode === 'idle' || mode === 'road') for (const a of want('BUILD_ROAD')) if (a.type === 'BUILD_ROAD') edges.push(a.edge);
       if (mode === 'idle' || mode === 'settlement') for (const a of want('BUILD_SETTLEMENT')) if (a.type === 'BUILD_SETTLEMENT') vertices.push(a.vertex);
       if (mode === 'idle' || mode === 'city') for (const a of want('BUILD_CITY')) if (a.type === 'BUILD_CITY') vertices.push(a.vertex);
+      // Idle: also outline every spot the rules allow but the hand cannot pay for yet.
+      if (mode === 'idle' && legal.length > 0) {
+        const me = state.players[human];
+        const lit = new Set(vertices);
+        const litE = new Set(edges);
+        if (me.pieces.roads > 0) for (const e of legalRoadEdges(state, human)) if (!litE.has(e)) dimEdges.push(e);
+        if (me.pieces.settlements > 0) for (const v of legalSettlementVertices(state, human, false)) if (!lit.has(v)) dimVertices.push(v);
+        if (me.pieces.cities > 0) for (const v of legalCityVertices(state, human)) if (!lit.has(v)) dimVertices.push(v);
+      }
       break;
     default:
       break;
   }
-  if (vertices.length + edges.length + hexes.length === 0) return NO_HIGHLIGHTS;
-  return { vertices, edges, hexes };
+  if (vertices.length + edges.length + hexes.length + dimVertices.length + dimEdges.length === 0) return NO_HIGHLIGHTS;
+  return { vertices, edges, hexes, dimVertices, dimEdges };
 }
 
 function ghostFor(pending: Pending | null, human: PlayerId): Ghost {
@@ -195,7 +208,7 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
   );
 
   const view = useMemo(() => toBoardView(state), [state]);
-  const highlights = useMemo(() => computeHighlights(state, legal, mode), [state, legal, mode]);
+  const highlights = useMemo(() => computeHighlights(state, legal, mode, human), [state, legal, mode, human]);
   const ghost = useMemo(() => ghostFor(pending, human), [pending, human]);
 
   const logLines = useMemo<LogLine[]>(() => {
@@ -260,6 +273,37 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
   }, [history, history.length, human, state.players, state.board, state.robber, state.buildings]);
   const clearDice = useCallback(() => setDiceRoll(null), []);
 
+  // Cards physically change hands: trades fly between the two players, discards fly to a pile below the island.
+  useEffect(() => {
+    const last = history.at(-1);
+    if (!last) return;
+    const centre = (sel: string): { x: number; y: number } | null => {
+      const r = document.querySelector(sel)?.getBoundingClientRect();
+      return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null;
+    };
+    const spot = (p: PlayerId, resource: Resource) => (p === human ? centre(`[data-hand-card="${resource}"]`) : centre(`[data-player="${p}"]`));
+    const list: Flight[] = [];
+    let n = 0;
+    const fly = (resource: Resource, from: { x: number; y: number } | null, to: { x: number; y: number } | null, tag: string) => {
+      if (!from || !to) return;
+      list.push({ id: `${history.length}-${tag}-${n}`, resource, from, via: { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 }, to, delay: n * 90 });
+      n++;
+    };
+    for (const ev of last.events) {
+      if (ev.type === 'traded') {
+        for (const r of RESOURCES) {
+          for (let i = 0; i < ev.gave[r]; i++) fly(r, spot(ev.from, r), spot(ev.to, r), 'gave');
+          for (let i = 0; i < ev.got[r]; i++) fly(r, spot(ev.to, r), spot(ev.from, r), 'got');
+        }
+      } else if (ev.type === 'discarded') {
+        const board = document.querySelector('.board-area')?.getBoundingClientRect();
+        const pile = board ? { x: board.left + board.width / 2, y: board.bottom - 48 } : null;
+        for (const r of RESOURCES) for (let i = 0; i < ev.resources[r]; i++) fly(r, spot(ev.player, r), pile, 'discard');
+      }
+    }
+    if (list.length > 0) setFlights(list);
+  }, [history, history.length, human]);
+
   /** Whether the hovered corner is one of your settlements awaiting a city upgrade (idle or city mode). */
   const hoverIsCity = useMemo(
     () => !!hover && hover.kind === 'vertex' && state.phase.kind === 'main' && (mode === 'city' || mode === 'idle') && legal.some((x) => x.type === 'BUILD_CITY' && x.vertex === hover.id),
@@ -272,11 +316,17 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
     if (phase.kind === 'setup') return hover.kind === 'vertex' ? 'Place your settlement here' : 'Place your road here';
     if (phase.kind === 'moveRobber') return 'Move the robber here';
     if (phase.kind === 'roadBuilding') return 'Place a free road here';
+    // Dim outlines: the rules allow it here, but the hand cannot pay yet. Say what is missing.
+    if (hover.kind === 'edge' && highlights.dimEdges.includes(hover.id)) return `Road: ${buildDisabledReason(state, human, 'road') ?? 'not yet'}`;
+    if (hover.kind === 'vertex' && highlights.dimVertices.includes(hover.id)) {
+      const kind = state.buildings[hover.id]?.owner === human ? 'city' : 'settlement';
+      return `${kind === 'city' ? 'City' : 'Settlement'}: ${buildDisabledReason(state, human, kind) ?? 'not yet'}`;
+    }
     if (hover.kind === 'edge') return 'Build a road here';
     if (hoverIsCity) return 'Upgrade to a city';
     if (hover.kind === 'vertex') return 'Build a settlement here';
     return null;
-  }, [hover, pending, state, hoverIsCity]);
+  }, [hover, pending, state, hoverIsCity, highlights, human]);
 
   const prompt = describeStep(state, human, mode, pending);
 
@@ -374,16 +424,19 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
               onPieceHover={setPieceHover}
               onProjector={(fn) => (projector.current = fn)}
             />
-            {!pending && !(phase.kind === 'tradeOffer' && yourMove) && <PromptBar prompt={prompt} buttons={buttons} floating />}
+            {!pending && !(phase.kind === 'tradeOffer' && yourMove) && (
+              <PromptBar prompt={prompt} buttons={buttons} floating centered={yourMove && buttons.length > 0 && highlights === NO_HIGHLIGHTS} />
+            )}
             {hover && hoverText && hover.kind === 'vertex' && !hoverIsCity && <CornerTooltip state={state} vertex={hover.id} action={hoverText} x={hover.x} y={hover.y} />}
             {hover && hoverText && (hover.kind !== 'vertex' || hoverIsCity) && (
               <div className="hover-tip" style={{ left: hover.x, top: hover.y }}>
                 {hoverText}
               </div>
             )}
-            {pieceHover && !hover && !pending && <PieceTooltip state={state} human={human} hover={pieceHover} />}
-            {tileHover && !pieceHover && !hover && !pending && <TileTooltip state={state} human={human} hover={tileHover} />}
-            <DiceOverlay roll={diceRoll} onDone={clearDice} />
+            {/* While moving the robber, keep the piece and tile tooltips up so you can see who a hex borders. */}
+            {pieceHover && (!hover || phase.kind === 'moveRobber') && !pending && <PieceTooltip state={state} human={human} hover={pieceHover} />}
+            {tileHover && !pieceHover && (!hover || phase.kind === 'moveRobber') && !pending && <TileTooltip state={state} human={human} hover={tileHover} />}
+            <DiceOverlay roll={diceRoll} onDone={clearDice} autoDismiss={fast} />
             <ResourceFlights flights={flights} onDone={clearFlights} />
           <div className="hand-panel">
               <div className="hand-panel-section">
@@ -393,6 +446,18 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
               <div className="hand-panel-section">
                 <DevCardPanel state={state} human={human} onPlay={onPlayDev} />
               </div>
+              <div className="hand-panel-section">
+                <BuildPanel
+                  state={state}
+                  human={human}
+                  mode={mode}
+                  onMode={(m) => {
+                    setPending(null);
+                    setMode(m);
+                  }}
+                  onBuyDev={(e) => select({ player: human, type: 'BUY_DEV_CARD' }, 'Costs 1 ore, 1 grain, 1 wool. The card is drawn at random.', anchorFromEvent(e))}
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -401,12 +466,6 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
           <ActionBar
             state={state}
             human={human}
-            mode={mode}
-            onMode={(m) => {
-              setPending(null);
-              setMode(m);
-            }}
-            onBuyDev={(e) => select({ player: human, type: 'BUY_DEV_CARD' }, 'Costs 1 ore, 1 grain, 1 wool. The card is drawn at random.', anchorFromEvent(e))}
             onMaritime={() => setDialog({ kind: 'maritime' })}
             onTrade={() => setDialog({ kind: 'trade' })}
             onRules={() => setDialog({ kind: 'rules' })}

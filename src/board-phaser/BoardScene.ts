@@ -60,7 +60,7 @@ export class BoardScene extends Phaser.Scene {
   private bridge!: BoardBridge;
   private assets: { key: string; path: string }[] = [];
   private view: BoardView | null = null;
-  private highlights: Highlights = { vertices: [], edges: [], hexes: [] };
+  private highlights: Highlights = { vertices: [], edges: [], hexes: [], dimVertices: [], dimEdges: [] };
   private ghost: Ghost = null;
 
   private tiles: Phaser.GameObjects.GameObject[] = [];
@@ -470,13 +470,22 @@ export class BoardScene extends Phaser.Scene {
 
   // ---------- interaction ----------
 
+  /**
+   * Phaser also listens for mousedown on the window, so a click on a DOM element floating over
+   * the board (the confirm popover, a tooltip) would otherwise hit-test the board underneath it.
+   */
+  private fromCanvas(pointer: Phaser.Input.Pointer): boolean {
+    const target = (pointer.event as { target?: EventTarget | null } | undefined)?.target;
+    return !target || target === this.game.canvas;
+  }
+
   private createZones(): void {
     for (let v = 0; v < VERTEX_COUNT; v++) {
       const p = VERTEX_PX[v];
       const zone = this.add.zone(p.x, p.y, HEX_R * 0.36, HEX_R * 0.36).setDepth(DEPTH.zone);
       zone.setInteractive(new Phaser.Geom.Circle(HEX_R * 0.18, HEX_R * 0.18, HEX_R * 0.18), Phaser.Geom.Circle.Contains);
       zone.disableInteractive();
-      zone.on('pointerdown', () => this.bridge.emit('vertexClick', v));
+      zone.on('pointerdown', (pointer: Phaser.Input.Pointer) => this.fromCanvas(pointer) && this.bridge.emit('vertexClick', v));
       zone.on('pointerover', () => this.hover({ kind: 'vertex', id: v }));
       zone.on('pointerout', () => this.hover(null));
       this.vertexZones.push(zone);
@@ -489,7 +498,7 @@ export class BoardScene extends Phaser.Scene {
       const zone = this.add.zone(eg.mid.x, eg.mid.y, len, w).setDepth(DEPTH.zone - 1).setRotation(eg.angle);
       zone.setInteractive(new Phaser.Geom.Rectangle(0, 0, len, w), Phaser.Geom.Rectangle.Contains);
       zone.disableInteractive();
-      zone.on('pointerdown', () => this.bridge.emit('edgeClick', e));
+      zone.on('pointerdown', (pointer: Phaser.Input.Pointer) => this.fromCanvas(pointer) && this.bridge.emit('edgeClick', e));
       zone.on('pointerover', () => this.hover({ kind: 'edge', id: e }));
       zone.on('pointerout', () => this.hover(null));
       this.edgeZones.push(zone);
@@ -503,7 +512,7 @@ export class BoardScene extends Phaser.Scene {
       const local = poly.map((p) => new Phaser.Geom.Point(p.x - c.x + w / 2, p.y - c.y + hh / 2));
       zone.setInteractive(new Phaser.Geom.Polygon(local), Phaser.Geom.Polygon.Contains);
       zone.disableInteractive();
-      zone.on('pointerdown', () => this.bridge.emit('hexClick', h));
+      zone.on('pointerdown', (pointer: Phaser.Input.Pointer) => this.fromCanvas(pointer) && this.bridge.emit('hexClick', h));
       zone.on('pointerover', () => this.hover({ kind: 'hex', id: h }));
       zone.on('pointerout', () => this.hover(null));
       this.hexZones.push(zone);
@@ -511,7 +520,34 @@ export class BoardScene extends Phaser.Scene {
   }
 
   private hovered: { kind: 'vertex' | 'edge' | 'hex'; id: number } | null = null;
+  /** A built piece under the cursor, drawn with a glow so hovering feels tactile. */
+  private pieceHovered: { kind: 'vertex' | 'edge'; id: number } | null = null;
   private infoZones: Phaser.GameObjects.Zone[] = [];
+
+  private setPieceHover(target: { kind: 'vertex' | 'edge'; id: number } | null, pointer?: Phaser.Input.Pointer): void {
+    const prev = this.pieceHovered;
+    this.pieceHovered = target;
+    const changed = prev?.kind !== target?.kind || prev?.id !== target?.id;
+    if (changed) {
+      // Lift the piece slightly while hovered, and settle it back afterwards.
+      const lift = (t: { kind: 'vertex' | 'edge'; id: number } | null, up: boolean) => {
+        if (!t) return;
+        const obj = t.kind === 'vertex' ? this.buildingObjs[t.id] : this.roadObjs[t.id];
+        if (!obj) return;
+        const base = t.kind === 'vertex' ? VERTEX_PX[t.id].y : EDGE_PX[t.id].mid.y;
+        this.tweens.killTweensOf(obj);
+        this.tweens.add({ targets: obj, y: up ? base - HEX_R * 0.06 : base, duration: 140, ease: 'Quad.easeOut' });
+      };
+      lift(prev, false);
+      lift(target, true);
+    }
+    if (!target || !pointer) {
+      if (!target) this.bridge.emit('pieceHover', null);
+      return;
+    }
+    const cam = this.cameras.main;
+    this.bridge.emit('pieceHover', { ...target, x: (pointer.worldX - cam.worldView.x) * cam.zoom, y: (pointer.worldY - cam.worldView.y) * cam.zoom });
+  }
 
   /** Always-on, lowest-priority hex zones that only report which tile the cursor is over. */
   private createInfoZones(): void {
@@ -536,10 +572,30 @@ export class BoardScene extends Phaser.Scene {
       zone.setInteractive(new Phaser.Geom.Circle(HEX_R * 0.21, HEX_R * 0.21, HEX_R * 0.21), Phaser.Geom.Circle.Contains);
       zone.on('pointermove', (pointer: Phaser.Input.Pointer) => {
         if (!this.view?.buildings[v]) return;
-        const cam = this.cameras.main;
-        this.bridge.emit('pieceHover', { vertex: v, x: (pointer.worldX - cam.worldView.x) * cam.zoom, y: (pointer.worldY - cam.worldView.y) * cam.zoom });
+        this.setPieceHover({ kind: 'vertex', id: v }, pointer);
       });
-      zone.on('pointerout', () => this.bridge.emit('pieceHover', null));
+      zone.on('pointerout', () => {
+        if (this.pieceHovered?.kind === 'vertex' && this.pieceHovered.id === v) this.setPieceHover(null);
+      });
+      this.infoZones.push(zone);
+    }
+    // Roads: a slim zone along each edge that only speaks up when a road is built there.
+    for (let e = 0; e < EDGE_COUNT; e++) {
+      const eg = EDGE_PX[e];
+      const [a, b] = TOPOLOGY.edgeVertices[e];
+      const len = Math.hypot(VERTEX_PX[b].x - VERTEX_PX[a].x, VERTEX_PX[b].y - VERTEX_PX[a].y) * 0.6;
+      const w = HEX_R * 0.2;
+      const zone = this.add.zone(eg.mid.x, eg.mid.y, len, w).setDepth(DEPTH.zone - 2.7).setRotation(eg.angle);
+      zone.setInteractive(new Phaser.Geom.Rectangle(0, 0, len, w), Phaser.Geom.Rectangle.Contains);
+      zone.on('pointermove', (pointer: Phaser.Input.Pointer) => {
+        if (!this.view || this.view.roads[e] === -1) return;
+        // A building at either end wins: it is the more interesting thing to inspect.
+        if (this.pieceHovered?.kind === 'vertex') return;
+        this.setPieceHover({ kind: 'edge', id: e }, pointer);
+      });
+      zone.on('pointerout', () => {
+        if (this.pieceHovered?.kind === 'edge' && this.pieceHovered.id === e) this.setPieceHover(null);
+      });
       this.infoZones.push(zone);
     }
     this.input.setTopOnly(false);
@@ -559,8 +615,9 @@ export class BoardScene extends Phaser.Scene {
 
   private setHighlights(h: Highlights): void {
     this.highlights = h;
-    const vs = new Set(h.vertices);
-    const es = new Set(h.edges);
+    // Dim spots stay hoverable so the tooltip can say what is missing, but clicking them does nothing.
+    const vs = new Set([...h.vertices, ...h.dimVertices]);
+    const es = new Set([...h.edges, ...h.dimEdges]);
     const hs = new Set(h.hexes);
     this.vertexZones.forEach((z, i) => (vs.has(i) ? z.setInteractive() : z.disableInteractive()));
     this.edgeZones.forEach((z, i) => (es.has(i) ? z.setInteractive() : z.disableInteractive()));
@@ -597,8 +654,36 @@ export class BoardScene extends Phaser.Scene {
       const poly = hexPolygon(h).map((p) => ({ x: HEX_PX[h].x + (p.x - HEX_PX[h].x) * 0.9, y: HEX_PX[h].y + (p.y - HEX_PX[h].y) * 0.9 }));
       g.strokePoints(poly, true);
     }
+    // Faint, steady outlines for "you could build here once you can pay".
+    g.lineStyle(2, 0xffffff, 0.32);
+    for (const v of this.highlights.dimVertices) {
+      const p = VERTEX_PX[v];
+      g.strokeCircle(p.x, p.y, HEX_R * 0.13);
+    }
+    for (const e of this.highlights.dimEdges) {
+      const [va, vb] = TOPOLOGY.edgeVertices[e];
+      const pa = VERTEX_PX[va];
+      const pb = VERTEX_PX[vb];
+      const dx = pb.x - pa.x;
+      const dy = pb.y - pa.y;
+      g.lineStyle(HEX_R * 0.09, 0xffffff, 0.22);
+      g.lineBetween(pa.x + dx * 0.2, pa.y + dy * 0.2, pb.x - dx * 0.2, pb.y - dy * 0.2);
+    }
     const hg = this.hoverGfx;
     hg.clear();
+    if (this.pieceHovered && !this.hovered) {
+      // Soft halo around the piece under the cursor.
+      const glow = 0.45 + 0.25 * Math.sin(this.pulse * Math.PI * 1.5);
+      if (this.pieceHovered.kind === 'vertex') {
+        const p = VERTEX_PX[this.pieceHovered.id];
+        hg.lineStyle(5, 0xffffff, glow);
+        hg.strokeEllipse(p.x, p.y, HEX_R * 0.7, HEX_R * 0.7 * CAMERA_K);
+      } else {
+        const [va, vb] = TOPOLOGY.edgeVertices[this.pieceHovered.id];
+        hg.lineStyle(HEX_R * 0.2, 0xffffff, glow * 0.6);
+        hg.lineBetween(VERTEX_PX[va].x, VERTEX_PX[va].y, VERTEX_PX[vb].x, VERTEX_PX[vb].y);
+      }
+    }
     if (this.hovered) {
       hg.lineStyle(3, 0xffffff, 0.9);
       if (this.hovered.kind === 'vertex') {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export interface DiceRoll {
   /** Unique id per roll so the same values still re-animate. */
@@ -55,13 +55,22 @@ function Die({ value, color, settled, spin }: { value: number; color: 'yellow' |
   );
 }
 
+export interface DiceOverlayProps {
+  roll: DiceRoll | null;
+  onDone: () => void;
+  /** Close on a timer instead of waiting for the Okay button (used while skipping ahead). */
+  autoDismiss?: boolean;
+}
+
 /**
  * Shows two dice tumbling across the board, landing on the rolled values, then the
- * total and what it produced. Purely presentational: the engine has already rolled.
+ * total and what it produced. It stays up until you press Okay, so a roll is never
+ * missed. Purely presentational: the engine has already rolled.
  */
-export function DiceOverlay({ roll, onDone }: { roll: DiceRoll | null; onDone: () => void }): React.JSX.Element | null {
+export function DiceOverlay({ roll, onDone, autoDismiss }: DiceOverlayProps): React.JSX.Element | null {
   const [stage, setStage] = useState<'tumble' | 'settled' | 'outcome' | 'hidden'>('hidden');
   const [spin, setSpin] = useState(0);
+  const okRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!roll) {
@@ -74,21 +83,32 @@ export function DiceOverlay({ roll, onDone }: { roll: DiceRoll | null; onDone: (
     // Tumble, then rest on the result long enough to read it, then reveal what it caused.
     const t1 = setTimeout(() => setStage('settled'), 1100);
     const t2 = setTimeout(() => setStage('outcome'), 2600);
-    const t3 = setTimeout(() => {
-      setStage('hidden');
-      onDone();
-    }, 2600 + 2600);
+    const t3 = autoDismiss
+      ? setTimeout(() => {
+          setStage('hidden');
+          onDone();
+        }, 2600 + 2600)
+      : null;
     return () => {
       clearTimeout(t0);
       clearTimeout(t1);
       clearTimeout(t2);
-      clearTimeout(t3);
+      if (t3) clearTimeout(t3);
     };
-  }, [roll, onDone]);
+  }, [roll, onDone, autoDismiss]);
+
+  // Focus Okay once the outcome shows, so Enter or Space dismisses it without reaching for the mouse.
+  useEffect(() => {
+    if (stage === 'outcome') okRef.current?.focus({ preventScroll: true });
+  }, [stage]);
 
   if (!roll || stage === 'hidden') return null;
   const total = roll.dice[0] + roll.dice[1];
   const settled = stage !== 'tumble';
+  const dismiss = () => {
+    setStage('hidden');
+    onDone();
+  };
   return (
     <div className={`dice-overlay stage-${stage}`} aria-live="polite">
       <div className="dice-backdrop" />
@@ -104,6 +124,11 @@ export function DiceOverlay({ roll, onDone }: { roll: DiceRoll | null; onDone: (
               <div key={i}>{line}</div>
             ))}
           </div>
+        )}
+        {stage === 'outcome' && !autoDismiss && (
+          <button ref={okRef} className="btn primary dice-ok" onClick={dismiss}>
+            Okay <kbd>↵</kbd>
+          </button>
         )}
       </div>
     </div>

@@ -30,6 +30,7 @@ import {
   tileTemplatePng,
 } from './templates';
 import { warpTileToContract } from './art-warp';
+import { PORTRAIT_KEYS } from '../src/ui/portraits';
 
 const ROOT = process.cwd();
 const OUT_DIR = path.join(ROOT, 'public', 'art');
@@ -370,7 +371,7 @@ async function main(): Promise<void> {
   fs.mkdirSync(ART_CACHE_DIR, { recursive: true });
 
   // Sanity: the manifest must cover exactly the renderer's asset keys.
-  const wanted = new Set([...allAssetPaths().map((a) => a.key), ...TILE_VARIANT_KEYS, ...PLAYER_PIECE_KEYS]);
+  const wanted = new Set([...allAssetPaths().map((a) => a.key), ...TILE_VARIANT_KEYS, ...PLAYER_PIECE_KEYS, ...PORTRAIT_KEYS]);
   const have = new Set(MANIFEST.map((m) => m.key));
   for (const k of wanted) if (!have.has(k)) console.warn(`WARNING: manifest has no entry for asset key ${k}`);
   for (const k of have) if (!wanted.has(k)) console.warn(`WARNING: manifest entry ${k} is not an asset key`);

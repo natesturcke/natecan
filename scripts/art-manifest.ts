@@ -21,6 +21,7 @@ import {
   tokenKey,
   type RoadOrientation,
 } from '../src/board-phaser/assets';
+import { PORTRAITS, type PortraitSpec } from '../src/ui/portraits';
 
 export type Quality = 'low' | 'medium' | 'high' | 'xhigh';
 
@@ -465,3 +466,36 @@ export const MANIFEST: ArtEntry[] = [
 export function findEntry(key: string): ArtEntry | undefined {
   return MANIFEST.find((e) => e.key === key);
 }
+
+// ---------------------------------------------------------------------------
+// Character portraits: one painted play card per bot name, plus a few for the human.
+// ---------------------------------------------------------------------------
+
+const TEAM_COLOUR: Record<PortraitSpec['team'], string> = {
+  blue: 'blue (#3b6fd6)',
+  orange: 'orange (#e8862e)',
+  white: 'ivory white (#f2efe4)',
+  red: 'red (#d33b2f)',
+};
+
+const PORTRAIT_COMMON =
+  'A character portrait playing card, full-bleed portrait format, no card border needed. Painted, realistic style matching a tabletop board game with warm, slightly aged palette, ' +
+  'like a hand-painted miniature bust photographed under soft studio light. Head-and-shoulders view, friendly caricature with plenty of personality, plain warm vignette background. ' +
+  'At the bottom is a small parchment banner with the bold title text "{TITLE}" and nothing else written.';
+
+function portraitEntry(p: PortraitSpec): ArtEntry {
+  return {
+    key: p.key,
+    kind: 'generate',
+    prompt: `${PORTRAIT_COMMON.replace('{TITLE}', p.title)} Character: ${p.hint}. Their clothing and accessories prominently feature the team colour ${TEAM_COLOUR[p.team]}.`,
+    width: CARD_IMAGE.width,
+    height: CARD_IMAGE.height,
+    apiSize: '1040x1456',
+    quality: 'medium',
+    post: 'card',
+    transparent: false,
+  };
+}
+
+export const PORTRAIT_ENTRIES: ArtEntry[] = PORTRAITS.map(portraitEntry);
+MANIFEST.push(...PORTRAIT_ENTRIES);

@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import type { Difficulty, PlayerSetup, SetupVariant } from '@/engine/types';
 import { botNamesFor } from './names';
+import { Portrait } from './Portrait';
+import { humanPortraitKey, portraitKey } from './portraits';
 
 export interface MenuChoice {
   seed: number;
@@ -10,34 +12,49 @@ export interface MenuChoice {
 
 const BOT_COLORS = ['#3b6fd6', '#e8862e', '#f2efe4'];
 const BOT_KEYS = ['blue', 'orange', 'white'] as const;
+const HUMAN_COLOR = '#d33b2f';
 
 export function MainMenu({ onStart }: { onStart: (choice: MenuChoice) => void }): React.JSX.Element {
   const [name, setName] = useState('You');
   const [difficulties, setDifficulties] = useState<Difficulty[]>(['medium', 'medium', 'medium']);
   const [seed, setSeed] = useState(() => String(Math.floor(Math.random() * 1_000_000)));
   const [variant, setVariant] = useState<SetupVariant>('spiral');
-  const names = botNamesFor(Number(seed) || 1);
+  const seedNumber = Number(seed) || 1;
+  const names = botNamesFor(seedNumber);
   const BOT_NAMES = BOT_KEYS.map((k) => names[k]);
+  const reshuffle = () => setSeed(String(Math.floor(Math.random() * 1_000_000)));
   return (
     <div className="menu">
       <div className="menu-card">
         <h1>natecan</h1>
         <p className="muted">Settle the island against three bots. The game tells you what to do at every step.</p>
-        <label>
-          Your name
-          <input value={name} onChange={(e) => setName(e.target.value)} maxLength={16} />
-        </label>
-        <div className="section-title">Opponents</div>
-        {BOT_NAMES.map((n, i) => (
-          <label key={n} className="row">
-            <span className="swatch" style={{ background: BOT_COLORS[i] }} /> {n}
-            <select value={difficulties[i]} onChange={(e) => setDifficulties((d) => d.map((x, j) => (j === i ? (e.target.value as Difficulty) : x)))}>
-              <option value="easy">Easy: plays at random</option>
-              <option value="medium">Medium: weighs every move</option>
-              <option value="hard">Hard: looks ahead</option>
-            </select>
-          </label>
-        ))}
+
+        {/* The table: your card and the three you are up against. */}
+        <div className="menu-table">
+          <div className="play-card you" style={{ borderColor: HUMAN_COLOR }}>
+            <Portrait portraitKey={humanPortraitKey(seedNumber)} name={name.trim() || 'You'} color={HUMAN_COLOR} size={84} />
+            <input className="play-card-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={16} aria-label="Your name" />
+            <span className="play-card-role">You</span>
+          </div>
+          {BOT_NAMES.map((n, i) => (
+            <div key={n} className="play-card" style={{ borderColor: BOT_COLORS[i] }}>
+              <Portrait portraitKey={portraitKey(n)} name={n} color={BOT_COLORS[i]} size={84} />
+              <span className="play-card-name">{n}</span>
+              <select value={difficulties[i]} onChange={(e) => setDifficulties((d) => d.map((x, j) => (j === i ? (e.target.value as Difficulty) : x)))} aria-label={`${n} difficulty`}>
+                <option value="easy">Easy</option>
+                <option value="medium">Medium</option>
+                <option value="hard">Hard</option>
+              </select>
+            </div>
+          ))}
+        </div>
+        <div className="menu-table-actions">
+          <button className="btn small" onClick={reshuffle} title="Deal a different set of opponents and a different island">
+            Deal a different table
+          </button>
+          <span className="muted">Easy plays at random · Medium weighs every move · Hard looks ahead</span>
+        </div>
+
         <details>
           <summary>Advanced</summary>
           <label>
@@ -56,10 +73,10 @@ export function MainMenu({ onStart }: { onStart: (choice: MenuChoice) => void })
           className="btn primary big"
           onClick={() =>
             onStart({
-              seed: Number(seed) || 1,
+              seed: seedNumber,
               setupVariant: variant,
               players: [
-                { name: name.trim() || 'You', color: '#d33b2f', kind: 'human' },
+                { name: name.trim() || 'You', color: HUMAN_COLOR, kind: 'human' },
                 ...BOT_NAMES.map((n, i) => ({ name: n, color: BOT_COLORS[i], kind: 'bot' as const, difficulty: difficulties[i] })),
               ],
             })

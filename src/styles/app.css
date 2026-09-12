@@ -108,7 +108,7 @@ button.btn.on {
   padding: 24px;
 }
 .menu-card {
-  width: min(480px, 100%);
+  width: min(640px, 100%);
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 14px;
@@ -277,6 +277,82 @@ button.btn.on {
   border-radius: 10px;
   padding: 6px 8px;
   opacity: 0.85;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.player-body {
+  flex: 1;
+  min-width: 0;
+}
+/* Painted character cards (or a monogram until the art exists). */
+.portrait {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  border-radius: 6px;
+  object-fit: cover;
+  box-shadow:
+    0 0 0 1px rgba(255, 240, 210, 0.35),
+    0 4px 10px rgba(0, 0, 0, 0.5);
+  background: #3a2e20;
+}
+.portrait.fallback {
+  color: #fff;
+  font-family: var(--font);
+  font-weight: 700;
+  font-size: 16px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+}
+/* Menu: the table of play cards. */
+.menu-table {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin: 14px 0 6px;
+}
+.play-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 8px;
+  border: 2px solid;
+  border-radius: 12px;
+  background: var(--panel-2);
+}
+.play-card .portrait {
+  border-radius: 8px;
+}
+.play-card .portrait.fallback {
+  font-size: 26px;
+}
+.play-card-name {
+  font-weight: 600;
+  text-align: center;
+  font-size: 13px;
+  line-height: 1.2;
+}
+.play-card input.play-card-name {
+  width: 100%;
+  text-align: center;
+  padding: 4px 6px;
+}
+.play-card-role {
+  font-size: 11px;
+  color: var(--muted);
+}
+.play-card select {
+  width: 100%;
+  font-size: 12px;
+  padding: 4px 6px;
+}
+.menu-table-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 4px 0 8px;
+  font-size: 12px;
 }
 .player-card.turn {
   opacity: 1;

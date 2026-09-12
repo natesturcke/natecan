@@ -1,5 +1,5 @@
 /** Playful bot names per colour, chosen per game from the seed. */
-const NAMES: Record<'blue' | 'orange' | 'white', string[]> = {
+export const NAMES: Record<'blue' | 'orange' | 'white', string[]> = {
   blue: [
     'Blue Devil',
     'Blue Baron',

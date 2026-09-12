@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Action } from '@/engine/actions';
-import { bag, bagCovers, bagTotal } from '@/engine/bag';
+import { bag, bagTotal } from '@/engine/bag';
 import { DISCARD_THRESHOLD } from '@/engine/constants';
 import { legalActions } from '@/engine/legal';
 import { discardCount } from '@/engine/rules/trade';

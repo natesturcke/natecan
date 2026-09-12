@@ -117,7 +117,8 @@ export function describeStep(state: GameState, human: PlayerId, mode: Mode, pend
       if (bagTotal(me.resources) > 0) can.push('offer a trade');
       const playable = me.devCards.filter((c) => c !== 'victoryPoint');
       if (playable.length > 0 && !state.turn.devPlayed) can.push('play a development card');
-      const canLine = can.length > 0 ? `You can ${can.join(', ')}.` : 'You cannot build anything yet.';
+      const buildable = legal.some((a) => a.type === 'BUILD_ROAD' || a.type === 'BUILD_SETTLEMENT' || a.type === 'BUILD_CITY');
+      const canLine = can.length > 0 ? `You can ${can.join(', ')}.${buildable ? ' Click a flashing spot on the board to build there.' : ''}` : 'You cannot build anything yet.';
       const cannotLine = cannot.length > 0 ? ` Not yet: ${cannot.join('; ')}.` : '';
       return {
         title: 'Your turn: trade or build, then end your turn.',

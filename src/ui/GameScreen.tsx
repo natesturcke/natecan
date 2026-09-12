@@ -61,9 +61,10 @@ function computeHighlights(state: GameState, legal: readonly Action[], mode: Mod
       for (const a of want('BUILD_ROAD')) if (a.type === 'BUILD_ROAD') edges.push(a.edge);
       break;
     case 'main':
-      if (mode === 'road') for (const a of want('BUILD_ROAD')) if (a.type === 'BUILD_ROAD') edges.push(a.edge);
-      if (mode === 'settlement') for (const a of want('BUILD_SETTLEMENT')) if (a.type === 'BUILD_SETTLEMENT') vertices.push(a.vertex);
-      if (mode === 'city') for (const a of want('BUILD_CITY')) if (a.type === 'BUILD_CITY') vertices.push(a.vertex);
+      // Idle: flash everything you can afford right now, exactly like the setup turn does.
+      if (mode === 'idle' || mode === 'road') for (const a of want('BUILD_ROAD')) if (a.type === 'BUILD_ROAD') edges.push(a.edge);
+      if (mode === 'idle' || mode === 'settlement') for (const a of want('BUILD_SETTLEMENT')) if (a.type === 'BUILD_SETTLEMENT') vertices.push(a.vertex);
+      if (mode === 'idle' || mode === 'city') for (const a of want('BUILD_CITY')) if (a.type === 'BUILD_CITY') vertices.push(a.vertex);
       break;
     default:
       break;
@@ -169,10 +170,11 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
 
   const onVertexClick = useCallback(
     (v: number) => {
+      // A corner is never both a settlement spot and a city spot, so idle mode can take whichever is legal.
       const a =
         find((x) => x.type === 'SETUP_PLACE_SETTLEMENT' && x.vertex === v) ??
-        (mode === 'settlement' ? find((x) => x.type === 'BUILD_SETTLEMENT' && x.vertex === v) : undefined) ??
-        (mode === 'city' ? find((x) => x.type === 'BUILD_CITY' && x.vertex === v) : undefined);
+        (mode === 'settlement' || mode === 'idle' ? find((x) => x.type === 'BUILD_SETTLEMENT' && x.vertex === v) : undefined) ??
+        (mode === 'city' || mode === 'idle' ? find((x) => x.type === 'BUILD_CITY' && x.vertex === v) : undefined);
       if (a) select(a, a.type === 'BUILD_SETTLEMENT' ? 'Costs 1 brick, 1 lumber, 1 grain, 1 wool.' : a.type === 'BUILD_CITY' ? 'Costs 3 ore and 2 grain.' : undefined);
     },
     [find, mode, select],
@@ -258,17 +260,23 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
   }, [history, history.length, human, state.players, state.board, state.robber, state.buildings]);
   const clearDice = useCallback(() => setDiceRoll(null), []);
 
+  /** Whether the hovered corner is one of your settlements awaiting a city upgrade (idle or city mode). */
+  const hoverIsCity = useMemo(
+    () => !!hover && hover.kind === 'vertex' && state.phase.kind === 'main' && (mode === 'city' || mode === 'idle') && legal.some((x) => x.type === 'BUILD_CITY' && x.vertex === hover.id),
+    [hover, state.phase.kind, mode, legal],
+  );
+
   const hoverText = useMemo(() => {
     if (!hover || pending) return null;
     const { phase } = state;
     if (phase.kind === 'setup') return hover.kind === 'vertex' ? 'Place your settlement here' : 'Place your road here';
     if (phase.kind === 'moveRobber') return 'Move the robber here';
     if (phase.kind === 'roadBuilding') return 'Place a free road here';
-    if (mode === 'road') return 'Build a road here';
-    if (mode === 'settlement') return 'Build a settlement here';
-    if (mode === 'city') return 'Upgrade to a city';
+    if (hover.kind === 'edge') return 'Build a road here';
+    if (hoverIsCity) return 'Upgrade to a city';
+    if (hover.kind === 'vertex') return 'Build a settlement here';
     return null;
-  }, [hover, pending, state, mode]);
+  }, [hover, pending, state, hoverIsCity]);
 
   const prompt = describeStep(state, human, mode, pending);
 
@@ -367,8 +375,8 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
               onProjector={(fn) => (projector.current = fn)}
             />
             {!pending && !(phase.kind === 'tradeOffer' && yourMove) && <PromptBar prompt={prompt} buttons={buttons} floating />}
-            {hover && hoverText && hover.kind === 'vertex' && mode !== 'city' && <CornerTooltip state={state} vertex={hover.id} action={hoverText} x={hover.x} y={hover.y} />}
-            {hover && hoverText && (hover.kind !== 'vertex' || mode === 'city') && (
+            {hover && hoverText && hover.kind === 'vertex' && !hoverIsCity && <CornerTooltip state={state} vertex={hover.id} action={hoverText} x={hover.x} y={hover.y} />}
+            {hover && hoverText && (hover.kind !== 'vertex' || hoverIsCity) && (
               <div className="hover-tip" style={{ left: hover.x, top: hover.y }}>
                 {hoverText}
               </div>

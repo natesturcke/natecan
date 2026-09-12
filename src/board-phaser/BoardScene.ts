@@ -71,6 +71,8 @@ export class BoardScene extends Phaser.Scene {
   private robberObj: Phaser.GameObjects.GameObject | null = null;
   private ghostObj: Phaser.GameObjects.GameObject | null = null;
   private highlightGfx!: Phaser.GameObjects.Graphics;
+  /** "!" badges over spots the rules allow but the hand cannot pay for yet. */
+  private dimMarkers: Phaser.GameObjects.Text[] = [];
   private hoverGfx!: Phaser.GameObjects.Graphics;
   private vertexZones: Phaser.GameObjects.Zone[] = [];
   private edgeZones: Phaser.GameObjects.Zone[] = [];
@@ -626,6 +628,16 @@ export class BoardScene extends Phaser.Scene {
       const set = this.hovered.kind === 'vertex' ? vs : this.hovered.kind === 'edge' ? es : hs;
       if (!set.has(this.hovered.id)) this.hover(null);
     }
+    // Rebuild the "!" badges for not-yet-affordable spots.
+    this.dimMarkers.forEach((m) => m.destroy());
+    this.dimMarkers = [];
+    const badge = (x: number, y: number) =>
+      this.add
+        .text(x, y, '!', { fontFamily: 'Georgia, serif', fontSize: '22px', fontStyle: 'bold', color: '#ffd166', stroke: '#2b2118', strokeThickness: 5 })
+        .setOrigin(0.5, 1)
+        .setDepth(DEPTH.highlight + 2);
+    for (const v of h.dimVertices) this.dimMarkers.push(badge(VERTEX_PX[v].x, VERTEX_PX[v].y - HEX_R * 0.16));
+    for (const e of h.dimEdges) this.dimMarkers.push(badge(EDGE_PX[e].mid.x, EDGE_PX[e].mid.y - HEX_R * 0.06));
   }
 
   private drawHighlights(): void {
@@ -654,11 +666,15 @@ export class BoardScene extends Phaser.Scene {
       const poly = hexPolygon(h).map((p) => ({ x: HEX_PX[h].x + (p.x - HEX_PX[h].x) * 0.9, y: HEX_PX[h].y + (p.y - HEX_PX[h].y) * 0.9 }));
       g.strokePoints(poly, true);
     }
-    // Faint, steady outlines for "you could build here once you can pay".
-    g.lineStyle(2, 0xffffff, 0.32);
+    // Amber throb on a slower beat for "you could build here once you can pay", plus a "!" badge.
+    const dim = 0.4 + 0.3 * Math.sin(this.pulse * Math.PI * 0.6);
+    const amber = 0xffd166;
+    g.lineStyle(3, amber, dim);
+    g.fillStyle(amber, dim * 0.2);
     for (const v of this.highlights.dimVertices) {
       const p = VERTEX_PX[v];
-      g.strokeCircle(p.x, p.y, HEX_R * 0.13);
+      g.fillCircle(p.x, p.y, HEX_R * 0.14);
+      g.strokeCircle(p.x, p.y, HEX_R * 0.14);
     }
     for (const e of this.highlights.dimEdges) {
       const [va, vb] = TOPOLOGY.edgeVertices[e];
@@ -666,9 +682,10 @@ export class BoardScene extends Phaser.Scene {
       const pb = VERTEX_PX[vb];
       const dx = pb.x - pa.x;
       const dy = pb.y - pa.y;
-      g.lineStyle(HEX_R * 0.09, 0xffffff, 0.22);
+      g.lineStyle(HEX_R * 0.1, amber, dim * 0.8);
       g.lineBetween(pa.x + dx * 0.2, pa.y + dy * 0.2, pb.x - dx * 0.2, pb.y - dy * 0.2);
     }
+    for (const m of this.dimMarkers) m.setAlpha(0.55 + 0.45 * Math.max(0, Math.sin(this.pulse * Math.PI * 0.6)));
     const hg = this.hoverGfx;
     hg.clear();
     if (this.pieceHovered && !this.hovered) {

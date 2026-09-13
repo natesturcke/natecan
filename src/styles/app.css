@@ -3114,3 +3114,26 @@ button.pick:disabled {
     font-size: 10px;
   }
 }
+
+/* ---------- player chips: the portrait fills the card's full height ---------- */
+.top-bar .player-card {
+  align-items: stretch;
+  padding: 0 10px 0 0;
+  overflow: hidden;
+}
+.top-bar .player-card .portrait {
+  width: 64px;
+  height: auto;
+  min-height: 100%;
+  margin: 0;
+  border-radius: 8px 0 0 8px;
+  box-shadow: none;
+  object-fit: cover;
+  align-self: stretch;
+}
+.top-bar .player-card .portrait.fallback {
+  display: grid;
+}
+.top-bar .player-body {
+  padding: 5px 0 6px;
+}

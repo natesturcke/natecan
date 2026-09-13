@@ -168,25 +168,31 @@ export class BoardScene extends Phaser.Scene {
   private applyCamera(): void {
     const cam = this.cameras.main;
     const zoom = this.fitZoom * this.userZoom;
-    // Keep the island from being panned entirely out of view.
+    // Keep the island from being panned entirely out of view: the limit grows with zoom so a
+    // close-up of a corner is still reachable, while at least part of the island stays on screen.
     const b = boardBounds();
-    const halfW = (b.maxX - b.minX) * 0.4;
-    const halfH = (b.maxY - b.minY) * 0.4;
-    this.pan.x = Phaser.Math.Clamp(this.pan.x, -halfW, halfW);
-    this.pan.y = Phaser.Math.Clamp(this.pan.y, -halfH, halfH);
+    const limitX = (b.maxX - b.minX) * 0.35 + this.scale.width / 2 / zoom;
+    const limitY = (b.maxY - b.minY) * 0.35 + this.scale.height / 2 / zoom;
+    this.pan.x = Phaser.Math.Clamp(this.pan.x, -limitX, limitX);
+    this.pan.y = Phaser.Math.Clamp(this.pan.y, -limitY, limitY);
     cam.setZoom(zoom);
     cam.centerOn(this.fitCentre.x + this.pan.x, this.fitCentre.y + this.pan.y);
   }
 
   /** Zooms by a factor while keeping the world point under the given canvas pixel fixed. */
   private zoomAt(factor: number, canvasX: number, canvasY: number): void {
-    const cam = this.cameras.main;
-    const before = cam.getWorldPoint(canvasX, canvasY);
+    // The camera's matrix only refreshes on the next render, so derive the world point under the
+    // cursor from our own centre and zoom rather than asking the camera.
+    const halfW = this.scale.width / 2;
+    const halfH = this.scale.height / 2;
+    const zoomBefore = this.fitZoom * this.userZoom;
+    const worldX = this.fitCentre.x + this.pan.x + (canvasX - halfW) / zoomBefore;
+    const worldY = this.fitCentre.y + this.pan.y + (canvasY - halfH) / zoomBefore;
     this.userZoom = Phaser.Math.Clamp(this.userZoom * factor, BoardScene.MIN_ZOOM, BoardScene.MAX_ZOOM);
-    this.applyCamera();
-    const after = cam.getWorldPoint(canvasX, canvasY);
-    this.pan.x += before.x - after.x;
-    this.pan.y += before.y - after.y;
+    const zoomAfter = this.fitZoom * this.userZoom;
+    // Choose the new centre so that world point stays under the cursor.
+    this.pan.x = worldX - (canvasX - halfW) / zoomAfter - this.fitCentre.x;
+    this.pan.y = worldY - (canvasY - halfH) / zoomAfter - this.fitCentre.y;
     this.applyCamera();
     this.emitGhostPosition();
   }

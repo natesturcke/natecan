@@ -3137,3 +3137,37 @@ button.pick:disabled {
 .top-bar .player-body {
   padding: 5px 0 6px;
 }
+
+/* ---------- trading post: fills the taller header ---------- */
+.top-bar .action-bar {
+  align-self: stretch;
+  align-items: stretch;
+}
+.trading-post {
+  align-self: stretch;
+  gap: 12px;
+  padding: 4px 12px 4px 6px;
+}
+.trading-post-centre {
+  justify-content: center;
+}
+.trading-post-art {
+  width: 118px;
+  height: 66px;
+  margin-bottom: 0;
+}
+.trading-post-title {
+  font-size: 14px;
+  margin-top: 2px;
+}
+.trading-post-stack {
+  justify-content: center;
+  gap: 6px;
+}
+.trading-post-stack .btn.small {
+  font-size: 13px;
+  padding: 6px 12px;
+}
+.top-bar .action-bar .row.bottom {
+  align-items: center;
+}

@@ -2656,3 +2656,61 @@ button.pick:disabled {
     animation: none;
   }
 }
+
+/* ---------- menu backdrop details: small pieces, dust, vignette ---------- */
+.menu-piece.detail {
+  filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.5));
+}
+.menu-vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 15;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 45%, rgba(0, 0, 0, 0) 35%, rgba(0, 0, 0, 0.45) 100%);
+}
+.menu-dust {
+  position: absolute;
+  z-index: 3;
+  border-radius: 50%;
+  background: #f3c96b;
+  box-shadow: 0 0 6px 2px rgba(243, 201, 107, 0.35);
+  animation: menu-dust-drift ease-in-out infinite alternate;
+}
+@keyframes menu-dust-drift {
+  0% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(18px, -30px);
+  }
+  100% {
+    transform: translate(-12px, 24px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .menu-dust {
+    animation: none;
+  }
+}
+
+/* ---------- the sea shows immediately while the island is still loading ---------- */
+.board-area {
+  background-color: #1f4d6a;
+  background-image: url('/art/sea.png');
+  background-repeat: repeat;
+  background-size: 512px 512px;
+  animation: sea-drift 60s linear infinite;
+}
+@keyframes sea-drift {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 512px 96px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .board-area {
+    animation: none;
+  }
+}

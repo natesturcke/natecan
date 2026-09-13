@@ -3757,3 +3757,156 @@ button.pick:disabled {
 .game-over-actions {
   gap: 12px;
 }
+
+/* ---------- ultrawide layout: columns either side of the island ---------- */
+.side-bar {
+  position: absolute;
+  top: 12px;
+  bottom: 12px;
+  width: 372px;
+  z-index: 18;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 16px;
+  overflow-y: auto;
+  overflow-x: visible;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.04) 40%, rgba(255, 255, 255, 0) 65%, rgba(0, 0, 0, 0.1) 100%),
+    rgba(14, 26, 38, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.25),
+    0 18px 48px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(1.5px) saturate(1.3);
+  -webkit-backdrop-filter: blur(1.5px) saturate(1.3);
+}
+.side-bar.left {
+  left: 12px;
+}
+.side-bar.right {
+  right: 12px;
+}
+.side-bar .section-title {
+  margin: 0 0 4px;
+  font-size: 12px;
+  color: var(--accent-2);
+}
+
+/* Left column: hand, development cards, build. */
+.side-bar .bar-hand {
+  width: auto;
+}
+.side-bar .bar-hand .hand-arc {
+  height: 132px;
+}
+.side-bar .bar-hand .hand-legend {
+  justify-content: center;
+}
+.side-bar .bar-dev .dev-cards {
+  flex-wrap: wrap;
+}
+.side-bar .bar-build {
+  width: auto;
+}
+.side-bar .bar-build .build-panel {
+  grid-template-columns: 1fr;
+}
+.side-bar .bar-build button.btn.build {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0) 55%),
+    rgba(12, 20, 28, 0.62);
+}
+
+/* Right column: players stacked, trading post, log filling the rest. */
+.side-bar .player-strip {
+  flex-direction: column;
+  gap: 8px;
+}
+.side-bar .player-card {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  padding: 0 10px 0 0;
+  overflow: visible;
+  opacity: 0.8;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0) 55%),
+    rgba(12, 20, 28, 0.62);
+}
+.side-bar .player-card.turn,
+.side-bar .player-card.actor {
+  opacity: 1;
+}
+.side-bar .player-card .portrait {
+  width: 64px;
+  height: auto;
+  min-height: 100%;
+  margin: 0;
+  border-radius: 8px 0 0 8px;
+  box-shadow: none;
+  object-fit: cover;
+  align-self: stretch;
+}
+.side-bar .player-body {
+  padding: 5px 0 6px;
+}
+.side-bar .player-head .swatch {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+}
+.side-bar .player-stats,
+.side-bar .player-meters,
+.side-bar .player-badges,
+.side-bar .vp {
+  display: none;
+}
+.side-bar .vp-pop {
+  left: auto;
+  right: calc(100% + 10px);
+  top: 0;
+}
+.side-bar .action-bar {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+.side-bar .trading-post {
+  justify-content: center;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0) 55%),
+    rgba(12, 20, 28, 0.62);
+}
+.side-bar .action-bar .row.bottom {
+  flex-direction: row;
+  justify-content: center;
+  padding: 0;
+  border: none;
+}
+.side-bar .bar-log {
+  flex: 1;
+  min-height: 160px;
+  display: flex;
+  flex-direction: column;
+}
+.side-bar .bar-log .turn-log {
+  flex: 1;
+  height: auto;
+  min-height: 160px;
+  max-height: none;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0) 55%),
+    rgba(12, 20, 28, 0.62);
+}
+/* The instruction card and review bar keep clear of the columns. */
+.game-screen.wide .below-bar {
+  left: 396px;
+  right: 396px;
+}
+.game-screen.wide .review-bar {
+  bottom: 40px;
+}

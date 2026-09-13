@@ -125,32 +125,50 @@ interface BarInsets {
 /** Room reserved under the header for the instruction card, whether or not one is showing. */
 const CARD_ALLOWANCE = 64;
 
+/** Ultrawide screens (about 2:1 or wider) get side columns instead of top and bottom bars. */
+const WIDE_QUERY = '(min-aspect-ratio: 2/1) and (min-width: 1700px)';
+
+function useWideLayout(): boolean {
+  const [wide, setWide] = useState(() => (typeof window !== 'undefined' ? window.matchMedia(WIDE_QUERY).matches : false));
+  useEffect(() => {
+    const mq = window.matchMedia(WIDE_QUERY);
+    const onChange = () => setWide(mq.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+  return wide;
+}
+
 /**
- * Measures the two bars so the island fits between them. The instruction card is deliberately
- * not measured: it comes and goes with every click, and refitting the camera each time made the
- * island jump. A fixed allowance keeps the view steady instead.
+ * Measures the panels so the island fits between them, whichever layout is active. The instruction
+ * card is deliberately not measured: it comes and goes with every click, and refitting the camera
+ * each time made the island jump. A fixed allowance keeps the view steady instead.
  */
-function useBarInsets(): BarInsets {
+function useBarInsets(layoutKey: string): BarInsets {
   const [insets, setInsets] = useState<BarInsets>(BOARD_INSETS);
   useEffect(() => {
     const measure = () => {
       const area = document.querySelector('.board-area')?.getBoundingClientRect();
+      if (!area) return;
       const top = document.querySelector('.top-bar')?.getBoundingClientRect();
       const bottom = document.querySelector('.bottom-bar')?.getBoundingClientRect();
-      if (!area) return;
-      const headerBottom = top ? Math.round(top.bottom - area.top + 10) : BOARD_INSETS.headerBottom;
+      const left = document.querySelector('.side-bar.left')?.getBoundingClientRect();
+      const right = document.querySelector('.side-bar.right')?.getBoundingClientRect();
+      const headerBottom = top ? Math.round(top.bottom - area.top + 10) : 12;
       const next: BarInsets = {
-        left: 16,
-        right: 16,
+        left: left ? Math.round(left.right - area.left + 16) : 16,
+        right: right ? Math.round(area.right - right.left + 16) : 16,
         top: headerBottom + CARD_ALLOWANCE,
-        bottom: bottom ? Math.round(area.bottom - bottom.top + 12) : BOARD_INSETS.bottom,
+        bottom: bottom ? Math.round(area.bottom - bottom.top + 12) : 16,
         headerBottom,
       };
-      setInsets((cur) => (cur.top === next.top && cur.bottom === next.bottom && cur.headerBottom === next.headerBottom ? cur : next));
+      setInsets((cur) =>
+        cur.top === next.top && cur.bottom === next.bottom && cur.left === next.left && cur.right === next.right && cur.headerBottom === next.headerBottom ? cur : next,
+      );
     };
     measure();
     const ro = new ResizeObserver(measure);
-    for (const sel of ['.top-bar', '.bottom-bar', '.board-area']) {
+    for (const sel of ['.top-bar', '.bottom-bar', '.side-bar.left', '.side-bar.right', '.board-area']) {
       const el = document.querySelector(sel);
       if (el) ro.observe(el);
     }
@@ -159,7 +177,7 @@ function useBarInsets(): BarInsets {
       ro.disconnect();
       window.removeEventListener('resize', measure);
     };
-  }, []);
+  }, [layoutKey]);
   return insets;
 }
 
@@ -459,7 +477,8 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
     dialog.kind !== 'none' ||
     (state.phase.kind === 'ended' && !reviewing) ||
     ((state.phase.kind === 'tradeOffer' || state.phase.kind === 'tradeResolve' || state.phase.kind === 'discard') && yourMove);
-  const barInsets = useBarInsets();
+  const wide = useWideLayout();
+  const barInsets = useBarInsets(wide ? 'wide' : 'stacked');
 
   // ----- prompt bar buttons -----
   const buttons: PromptButton[] = [];
@@ -543,8 +562,53 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
     });
   };
 
+  // The panel sections, laid out differently depending on the screen's shape.
+  const handSection = (
+    <section className="bar-hand">
+      <div className="section-title">Your hand</div>
+      <PlayerHand resources={shownHand} />
+    </section>
+  );
+  const devSection = (
+    <section className="bar-dev">
+      <DevCardPanel state={state} human={human} onPlay={onPlayDev} />
+    </section>
+  );
+  const buildSection = (
+    <section className="bar-build">
+      <BuildPanel
+        state={state}
+        human={human}
+        mode={mode}
+        onMode={(m) => {
+          setPending(null);
+          setMode(m);
+        }}
+        onBuyDev={(e) => select({ player: human, type: 'BUY_DEV_CARD' }, 'Costs 1 ore, 1 grain, 1 wool. The card is drawn at random.', anchorFromEvent(e))}
+      />
+    </section>
+  );
+  const logSection = (
+    <section className="bar-log">
+      <div className="section-title">
+        Log <span className="muted log-turns">· {Math.floor(Math.max(0, state.turn.number - 1) / state.players.length)} turns completed</span>
+      </div>
+      <TurnLog lines={logLines} state={state} human={human} />
+    </section>
+  );
+  const actionBar = (
+    <ActionBar
+      state={state}
+      human={human}
+      onMaritime={() => setDialog({ kind: 'maritime' })}
+      onTrade={() => setDialog({ kind: 'trade' })}
+      onRules={() => setDialog({ kind: 'rules' })}
+      onQuit={onQuit}
+    />
+  );
+
   return (
-    <div className="game-screen">
+    <div className={`game-screen ${wide ? 'wide' : 'stacked'}`}>
       <div className="game-body">
         <div className="board-column">
           <div className="board-area">
@@ -586,45 +650,34 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
             <DiceOverlay roll={diceRoll} onDone={clearDice} autoDismiss={fast} />
             <ResourceFlights flights={flights} onDone={clearFlights} />
             {/* Top bar: who is at the table, and the table-side controls. */}
-            <header className="top-bar">
-              <PlayerStrip state={state} human={human} />
-              <ActionBar
-                state={state}
-                human={human}
-                onMaritime={() => setDialog({ kind: 'maritime' })}
-                onTrade={() => setDialog({ kind: 'trade' })}
-                onRules={() => setDialog({ kind: 'rules' })}
-                onQuit={onQuit}
-              />
-            </header>
-            {/* Bottom bar: everything that is yours, plus the log. */}
-            <footer className="bottom-bar">
-              <section className="bar-hand">
-                <div className="section-title">Your hand</div>
-                <PlayerHand resources={shownHand} />
-              </section>
-              <section className="bar-dev">
-                <DevCardPanel state={state} human={human} onPlay={onPlayDev} />
-              </section>
-              <section className="bar-build">
-                <BuildPanel
-                  state={state}
-                  human={human}
-                  mode={mode}
-                  onMode={(m) => {
-                    setPending(null);
-                    setMode(m);
-                  }}
-                  onBuyDev={(e) => select({ player: human, type: 'BUY_DEV_CARD' }, 'Costs 1 ore, 1 grain, 1 wool. The card is drawn at random.', anchorFromEvent(e))}
-                />
-              </section>
-              <section className="bar-log">
-                <div className="section-title">
-                  Log <span className="muted log-turns">· {Math.floor(Math.max(0, state.turn.number - 1) / state.players.length)} turns completed</span>
-                </div>
-                <TurnLog lines={logLines} state={state} human={human} />
-              </section>
-            </footer>
+            {/* Wide screens: your things on the left, the table on the right. Otherwise bars above and below. */}
+            {wide ? (
+              <>
+                <aside className="side-bar left">
+                  {handSection}
+                  {devSection}
+                  {buildSection}
+                </aside>
+                <aside className="side-bar right">
+                  <PlayerStrip state={state} human={human} />
+                  {actionBar}
+                  {logSection}
+                </aside>
+              </>
+            ) : (
+              <>
+                <header className="top-bar">
+                  <PlayerStrip state={state} human={human} />
+                  {actionBar}
+                </header>
+                <footer className="bottom-bar">
+                  {handSection}
+                  {devSection}
+                  {buildSection}
+                  {logSection}
+                </footer>
+              </>
+            )}
           </div>
         </div>
       </div>

@@ -2982,3 +2982,20 @@ button.pick:disabled {
   font-size: 11px;
   letter-spacing: 0;
 }
+
+/* ---------- hand: fan sits above the count chips, chips sit above the fan ---------- */
+.bar-hand .hand-arc {
+  height: 118px;
+  margin-top: 0;
+}
+.bar-hand .hand-card-btn {
+  top: -6px;
+}
+.bar-hand .hand-legend {
+  position: relative;
+  z-index: 55;
+  margin-top: 4px;
+}
+.hand-chip-pop {
+  z-index: 70;
+}

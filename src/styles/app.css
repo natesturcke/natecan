@@ -834,8 +834,8 @@ button.pick:disabled {
 }
 .instruction-card {
   position: absolute;
-  top: 18px;
-  left: calc(330px + (100% - 330px - 372px) / 2);
+  top: 96px;
+  left: 50%;
   transform: translateX(-50%);
   z-index: 20;
   min-width: 320px;
@@ -1455,8 +1455,8 @@ button.pick:disabled {
 }
 .instruction-card {
   position: absolute;
-  top: 18px;
-  left: calc(330px + (100% - 330px - 372px) / 2);
+  top: 96px;
+  left: 50%;
   transform: translateX(-50%);
   z-index: 20;
   min-width: 320px;
@@ -1938,4 +1938,166 @@ button.pick:disabled {
 .offer-arrow {
   font-size: 28px;
   color: var(--accent-2);
+}
+
+/* ---------- top and bottom bars (the island gets the full width between them) ---------- */
+.top-bar,
+.bottom-bar {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  z-index: 18;
+  display: flex;
+  align-items: stretch;
+  gap: 14px;
+  padding: 8px 12px;
+  background: rgba(28, 22, 16, 0.6);
+  border: 1px solid rgba(255, 236, 200, 0.28);
+  border-radius: 16px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(12px) saturate(1.2);
+  -webkit-backdrop-filter: blur(12px) saturate(1.2);
+}
+.top-bar {
+  top: 12px;
+  height: 72px;
+  align-items: center;
+}
+.bottom-bar {
+  bottom: 12px;
+  height: 198px;
+}
+.top-bar .section-title,
+.bottom-bar .section-title {
+  margin: 0 0 4px;
+  font-size: 12px;
+  color: var(--accent-2);
+}
+
+/* Players in a row across the top. */
+.top-bar .player-strip {
+  flex: 1;
+  flex-direction: row;
+  gap: 8px;
+  min-width: 0;
+}
+.top-bar .player-card {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 8px;
+  gap: 8px;
+  background: rgba(60, 50, 38, 0.5);
+}
+.top-bar .player-stats {
+  font-size: 11px;
+}
+.top-bar .player-badges {
+  display: inline-flex;
+  gap: 4px;
+}
+.top-bar .player-badges .badge {
+  font-size: 10px;
+  padding: 1px 6px;
+}
+
+/* Table controls in one row on the right of the top bar. */
+.top-bar .action-bar {
+  flex: none;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+.top-bar .action-bar .section-title {
+  display: none;
+}
+.top-bar .action-bar .row {
+  gap: 8px;
+}
+.top-bar .action-bar .row.bottom {
+  margin: 0;
+}
+.top-bar .action-bar .toggle {
+  margin-left: 0;
+}
+
+/* Bottom bar sections. */
+.bar-hand {
+  flex: none;
+  width: 330px;
+  display: flex;
+  flex-direction: column;
+}
+.bar-hand .hand-arc {
+  height: 128px;
+  margin-top: 0;
+}
+.bar-hand .hand-card-btn {
+  top: 14px;
+}
+.bar-hand .hand-legend {
+  margin-top: 2px;
+}
+.bar-dev {
+  flex: none;
+}
+.bar-dev .dev-fan {
+  margin-top: 0;
+}
+.bar-dev .hand-title {
+  font-size: 12px;
+  color: var(--accent-2);
+  text-shadow: none;
+  margin-bottom: 4px;
+}
+.bar-dev .dev-cards {
+  flex-wrap: nowrap;
+}
+.bar-build {
+  flex: none;
+  width: 400px;
+}
+.bar-build .build-panel {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.bar-build .build-panel .section-title {
+  grid-column: 1 / -1;
+}
+.bar-build button.btn.build {
+  padding: 5px 9px;
+  gap: 2px;
+  background: rgba(60, 50, 38, 0.55);
+}
+.bar-build .build-label {
+  font-size: 13px;
+}
+.bar-build .reason {
+  font-size: 10.5px;
+  line-height: 1.15;
+}
+.bar-log {
+  flex: 1;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+}
+.bar-log .turn-log {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+  background: rgba(20, 16, 12, 0.5);
+}
+
+/* Narrow screens: let the bottom bar wrap and scroll rather than overflow the island. */
+@media (max-width: 1250px) {
+  .bottom-bar {
+    height: auto;
+    max-height: 46vh;
+    flex-wrap: wrap;
+    overflow-y: auto;
+  }
+  .bar-log {
+    min-height: 120px;
+  }
 }

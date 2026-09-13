@@ -106,8 +106,8 @@ function ghostFor(pending: Pending | null, human: PlayerId): Ghost {
   }
 }
 
-/** Screen space used by the hand panel (left), sidebar (right), instruction card (top). */
-const BOARD_INSETS = { left: 330, right: 372, top: 96, bottom: 20 };
+/** Screen space used by the top bar plus instruction card, and the bottom bar. */
+const BOARD_INSETS = { left: 16, right: 16, top: 150, bottom: 214 };
 
 const AUTO_ADVANCE: ReadonlySet<Action['type']> = new Set(['SETUP_PLACE_ROAD', 'STEAL']);
 
@@ -302,7 +302,8 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
         }
       } else if (ev.type === 'discarded') {
         const board = document.querySelector('.board-area')?.getBoundingClientRect();
-        const pile = board ? { x: board.left + board.width / 2, y: board.bottom - 48 } : null;
+        const bar = document.querySelector('.bottom-bar')?.getBoundingClientRect();
+        const pile = board ? { x: board.left + board.width / 2, y: (bar ? bar.top : board.bottom) - 40 } : null;
         for (const r of RESOURCES) for (let i = 0; i < ev.resources[r]; i++) fly(r, spot(ev.player, r), pile, 'discard');
       }
     }
@@ -448,15 +449,30 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
             {tileHover && !pieceHover && (!hover || phase.kind === 'moveRobber') && !pending && <TileTooltip state={state} human={human} hover={tileHover} />}
             <DiceOverlay roll={diceRoll} onDone={clearDice} autoDismiss={fast} />
             <ResourceFlights flights={flights} onDone={clearFlights} />
-          <div className="hand-panel">
-              <div className="hand-panel-section">
+            {/* Top bar: who is at the table, and the table-side controls. */}
+            <header className="top-bar">
+              <PlayerStrip state={state} human={human} />
+              <ActionBar
+                state={state}
+                human={human}
+                onMaritime={() => setDialog({ kind: 'maritime' })}
+                onTrade={() => setDialog({ kind: 'trade' })}
+                onRules={() => setDialog({ kind: 'rules' })}
+                fast={fast}
+                onFast={setFast}
+                onQuit={onQuit}
+              />
+            </header>
+            {/* Bottom bar: everything that is yours, plus the log. */}
+            <footer className="bottom-bar">
+              <section className="bar-hand">
                 <div className="section-title">Your hand</div>
                 <PlayerHand resources={me.resources} selectable={phase.kind === 'discard' && yourMove} selected={discardPick} onToggle={toggleDiscard} />
-              </div>
-              <div className="hand-panel-section">
+              </section>
+              <section className="bar-dev">
                 <DevCardPanel state={state} human={human} onPlay={onPlayDev} />
-              </div>
-              <div className="hand-panel-section">
+              </section>
+              <section className="bar-build">
                 <BuildPanel
                   state={state}
                   human={human}
@@ -467,25 +483,14 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
                   }}
                   onBuyDev={(e) => select({ player: human, type: 'BUY_DEV_CARD' }, 'Costs 1 ore, 1 grain, 1 wool. The card is drawn at random.', anchorFromEvent(e))}
                 />
-              </div>
-            </div>
+              </section>
+              <section className="bar-log">
+                <div className="section-title">Log</div>
+                <TurnLog lines={logLines} />
+              </section>
+            </footer>
           </div>
         </div>
-        <aside className="sidebar">
-          <PlayerStrip state={state} human={human} />
-          <ActionBar
-            state={state}
-            human={human}
-            onMaritime={() => setDialog({ kind: 'maritime' })}
-            onTrade={() => setDialog({ kind: 'trade' })}
-            onRules={() => setDialog({ kind: 'rules' })}
-            fast={fast}
-            onFast={setFast}
-            onQuit={onQuit}
-          />
-          <div className="section-title">Log</div>
-          <TurnLog lines={logLines} />
-        </aside>
       </div>
 
       {pending && (

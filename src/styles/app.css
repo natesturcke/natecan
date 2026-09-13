@@ -4038,3 +4038,115 @@ body {
   width: 100% !important;
   height: 100% !important;
 }
+
+/* ---------- touch and tablets ---------- */
+body {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.phaser-host canvas {
+  touch-action: none;
+}
+/* Hover-only pop-outs would swallow the first tap, so they stay off on touch screens. */
+@media (hover: none) {
+  .build-pop,
+  .dev-pop,
+  .hand-chip-pop,
+  .vp-pop,
+  .hand-summary {
+    display: none !important;
+  }
+  .hand-arc:hover {
+    --spread: 1;
+  }
+}
+@media (pointer: coarse) {
+  .btn {
+    min-height: 40px;
+  }
+  .btn.small,
+  .btn.tiny {
+    min-height: 36px;
+  }
+  .top-bar .action-bar .btn,
+  .trading-post-stack .btn.small {
+    min-height: 36px;
+  }
+  .hand-chip {
+    padding: 4px 8px 4px 5px;
+  }
+  .hand-card-btn {
+    cursor: pointer;
+  }
+}
+/* Compact bottom bar when the log is a drawer: hand and build share the width. */
+.bottom-bar.compact {
+  height: auto;
+  min-height: 150px;
+  justify-content: center;
+  gap: 18px;
+}
+.bottom-bar.compact .bar-hand {
+  width: 300px;
+}
+.bottom-bar.compact .bar-hand .hand-arc {
+  height: 112px;
+}
+.bottom-bar.compact .bar-build {
+  width: 360px;
+}
+.bottom-bar.compact .bar-build button.btn.build {
+  padding: 4px 8px;
+}
+/* The log drawer. */
+.log-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  background: rgba(0, 0, 0, 0.35);
+}
+.log-drawer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(420px, 90vw);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  background: rgba(28, 22, 16, 0.96);
+  border-left: 1px solid rgba(255, 236, 200, 0.28);
+  box-shadow: -20px 0 50px rgba(0, 0, 0, 0.5);
+  animation: drawer-in 0.2s ease-out;
+}
+.presence.leaving .log-drawer {
+  transform: translateX(24px);
+  transition: transform 0.17s ease-in;
+}
+@keyframes drawer-in {
+  from {
+    transform: translateX(40px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+.log-drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.log-drawer-head .section-title {
+  margin: 0;
+  font-size: 15px;
+}
+.log-drawer .turn-log {
+  flex: 1;
+  height: auto;
+  min-height: 0;
+  max-height: none;
+  font-size: 13px;
+}

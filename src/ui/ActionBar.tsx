@@ -9,6 +9,8 @@ export interface ActionBarProps {
   onMaritime: () => void;
   onTrade: () => void;
   onRules: () => void;
+  /** When set, the log is hidden elsewhere and this opens it. */
+  onLog?: () => void;
   onQuit: () => void;
 }
 
@@ -34,6 +36,11 @@ export function ActionBar(p: ActionBarProps): React.JSX.Element {
         </div>
       </div>
       <div className="row bottom">
+        {p.onLog && (
+          <button className="btn" onClick={p.onLog}>
+            Log
+          </button>
+        )}
         <button className="btn" onClick={p.onRules}>
           Rules
         </button>

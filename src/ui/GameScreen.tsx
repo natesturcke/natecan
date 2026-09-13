@@ -128,16 +128,24 @@ const CARD_ALLOWANCE = 64;
 /** Ultrawide screens (about 2:1 or wider) get side columns instead of top and bottom bars. */
 const WIDE_QUERY = '(min-aspect-ratio: 2/1) and (min-width: 1700px)';
 
-function useWideLayout(): boolean {
-  const [wide, setWide] = useState(() => (typeof window !== 'undefined' ? window.matchMedia(WIDE_QUERY).matches : false));
+function useMediaQuery(query: string): boolean {
+  const [matches, setMatches] = useState(() => (typeof window !== 'undefined' ? window.matchMedia(query).matches : false));
   useEffect(() => {
-    const mq = window.matchMedia(WIDE_QUERY);
-    const onChange = () => setWide(mq.matches);
+    const mq = window.matchMedia(query);
+    const onChange = () => setMatches(mq.matches);
+    onChange();
     mq.addEventListener('change', onChange);
     return () => mq.removeEventListener('change', onChange);
-  }, []);
-  return wide;
+  }, [query]);
+  return matches;
 }
+
+function useWideLayout(): boolean {
+  return useMediaQuery(WIDE_QUERY);
+}
+
+/** Tablets and small windows: the log lives behind a button instead of taking bar space. */
+const COMPACT_LOG_QUERY = '(pointer: coarse), (max-width: 1150px)';
 
 /**
  * Measures the panels so the island fits between them, whichever layout is active. The instruction
@@ -478,7 +486,9 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
     (state.phase.kind === 'ended' && !reviewing) ||
     ((state.phase.kind === 'tradeOffer' || state.phase.kind === 'tradeResolve' || state.phase.kind === 'discard') && yourMove);
   const wide = useWideLayout();
-  const barInsets = useBarInsets(wide ? 'wide' : 'stacked');
+  const compactLog = useMediaQuery(COMPACT_LOG_QUERY);
+  const [logOpen, setLogOpen] = useState(false);
+  const barInsets = useBarInsets(`${wide ? 'wide' : 'stacked'}-${compactLog ? 'compact' : 'full'}`);
 
   // ----- prompt bar buttons -----
   const buttons: PromptButton[] = [];
@@ -603,8 +613,27 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
       onMaritime={() => setDialog({ kind: 'maritime' })}
       onTrade={() => setDialog({ kind: 'trade' })}
       onRules={() => setDialog({ kind: 'rules' })}
+      onLog={compactLog ? () => setLogOpen(true) : undefined}
       onQuit={onQuit}
     />
+  );
+  // On tablets the log is a slide-in drawer rather than a permanent panel.
+  const logDrawer = compactLog && (
+    <Presence show={logOpen}>
+      {logOpen && (
+        <div className="log-drawer-backdrop" onClick={() => setLogOpen(false)}>
+          <div className="log-drawer" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Game log">
+            <div className="log-drawer-head">
+              <span className="section-title">Log · {Math.floor(Math.max(0, state.turn.number - 1) / state.players.length)} turns completed</span>
+              <button className="btn small" onClick={() => setLogOpen(false)}>
+                Close
+              </button>
+            </div>
+            <TurnLog lines={logLines} state={state} human={human} />
+          </div>
+        </div>
+      )}
+    </Presence>
   );
 
   return (
@@ -661,7 +690,7 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
                 <aside className="side-bar right">
                   <PlayerStrip state={state} human={human} />
                   {actionBar}
-                  {logSection}
+                  {!compactLog && logSection}
                 </aside>
               </>
             ) : (
@@ -670,14 +699,15 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
                   <PlayerStrip state={state} human={human} />
                   {actionBar}
                 </header>
-                <footer className="bottom-bar">
+                <footer className={`bottom-bar ${compactLog ? 'compact' : ''}`}>
                   {handSection}
                   {devSection}
                   {buildSection}
-                  {logSection}
+                  {!compactLog && logSection}
                 </footer>
               </>
             )}
+            {logDrawer}
           </div>
         </div>
       </div>

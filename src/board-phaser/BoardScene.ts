@@ -224,13 +224,35 @@ export class BoardScene extends Phaser.Scene {
       const scale = this.scale.width / rect.width;
       this.zoomAt(factor, (ev.clientX - rect.left) * scale, (ev.clientY - rect.top) * scale);
     });
+    // Two fingers: pinch to zoom around the midpoint (touch screens).
+    this.input.addPointer(1);
+    let pinchDistance = 0;
+    const touches = () => [this.input.pointer1, this.input.pointer2].filter((p) => p && p.isDown && p.wasTouch);
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
       if (!this.fromCanvas(pointer)) return;
+      const active = touches();
+      if (active.length === 2) {
+        pinchDistance = Phaser.Math.Distance.Between(active[0].x, active[0].y, active[1].x, active[1].y);
+        this.dragging = false;
+        this.dragMoved = true; // a pinch is never a click
+        return;
+      }
       this.dragging = true;
       this.dragMoved = false;
       this.dragStart = { px: pointer.x, py: pointer.y, pan: { ...this.pan } };
     });
     this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
+      const active = touches();
+      if (active.length === 2) {
+        const d = Phaser.Math.Distance.Between(active[0].x, active[0].y, active[1].x, active[1].y);
+        if (pinchDistance > 0 && d > 0) {
+          this.zoomAt(d / pinchDistance, (active[0].x + active[1].x) / 2, (active[0].y + active[1].y) / 2);
+        }
+        pinchDistance = d;
+        this.dragging = false;
+        this.dragMoved = true;
+        return;
+      }
       if (!this.dragging || !this.dragStart || !pointer.isDown) return;
       const dx = pointer.x - this.dragStart.px;
       const dy = pointer.y - this.dragStart.py;

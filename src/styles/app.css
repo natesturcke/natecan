@@ -2427,3 +2427,79 @@ button.pick:disabled {
     min-height: 0;
   }
 }
+
+/* ---------- instruction card: narrower, with a collapsible explanation ---------- */
+.instruction-card.below {
+  max-width: min(540px, calc(100% - 32px));
+  min-width: 280px;
+  padding: 7px 14px;
+}
+.instruction-card.below .prompt-title {
+  font-size: 16px;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.instruction-card.below .prompt-detail {
+  font-size: 11.5px;
+  line-height: 1.3;
+  margin-top: 3px;
+}
+.prompt-toggle {
+  font: inherit;
+  font-family: var(--ui-font);
+  font-size: 11px;
+  color: #cfe6f7;
+  background: transparent;
+  border: 1px solid rgba(207, 230, 247, 0.4);
+  border-radius: 999px;
+  padding: 0 7px;
+  line-height: 16px;
+  cursor: pointer;
+  opacity: 0.8;
+}
+.prompt-toggle:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* ---------- trading post in the header ---------- */
+.trading-post {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 10px 2px 2px;
+  border-radius: 12px;
+  background: rgba(60, 50, 38, 0.45);
+  border: 1px solid rgba(255, 236, 200, 0.2);
+}
+.trading-post-art {
+  width: 84px;
+  height: 56px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.55));
+}
+.trading-post-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.trading-post-title {
+  font-family: var(--font);
+  font-size: 14px;
+  color: var(--accent-2);
+  letter-spacing: 0.4px;
+  line-height: 1;
+}
+.trading-post-actions {
+  display: flex;
+  gap: 6px;
+}
+.trading-post-actions .btn.small {
+  white-space: nowrap;
+  font-size: 12px;
+  padding: 4px 9px;
+}
+.top-bar .action-bar .row.bottom {
+  padding-left: 12px;
+}

@@ -22,6 +22,7 @@ import {
   type RoadOrientation,
 } from '../src/board-phaser/assets';
 import { PORTRAITS, type PortraitSpec } from '../src/ui/portraits';
+import { UI_ART } from '../src/ui/uiArt';
 
 export type Quality = 'low' | 'medium' | 'high' | 'xhigh';
 
@@ -499,3 +500,27 @@ function portraitEntry(p: PortraitSpec): ArtEntry {
 
 export const PORTRAIT_ENTRIES: ArtEntry[] = PORTRAITS.map(portraitEntry);
 MANIFEST.push(...PORTRAIT_ENTRIES);
+
+// ---------------------------------------------------------------------------
+// Interface decorations
+// ---------------------------------------------------------------------------
+
+export const UI_ART_ENTRIES: ArtEntry[] = [
+  {
+    key: UI_ART.tradingPost,
+    kind: 'generate',
+    prompt:
+      'A small wooden trading post building as a tabletop miniature: a rustic timber market hut with a pitched shingle roof, an open counter with an awning, ' +
+      'a hanging wooden sign, crates, barrels and sacks of goods stacked beside it, a couple of coin purses and a set of brass scales on the counter. ' +
+      'Isolated object on a fully transparent background, nothing else in the frame, no text on the sign. ' +
+      'Painted, realistic, hand-painted resin miniature style photographed under soft studio light, slight three-quarter view from the front, light from the top-left, no watermark.',
+    width: 240,
+    height: 160,
+    apiSize: '1024x1024',
+    quality: 'medium',
+    post: 'sprite',
+    fit: { maxWidth: 224, maxHeight: 150, bottomY: 156, centerX: 120 },
+    transparent: true,
+  },
+];
+MANIFEST.push(...UI_ART_ENTRIES);

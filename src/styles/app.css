@@ -3315,3 +3315,74 @@ button.pick:disabled {
   color: var(--bad);
   font-weight: 600;
 }
+
+/* ---------- player cards: hover to see where the points come from ---------- */
+.top-bar .player-card {
+  position: relative;
+}
+.vp-pop {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 10px);
+  width: 300px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(20, 16, 12, 0.95);
+  border: 1px solid var(--accent);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.6);
+  color: #fff4dc;
+  font-size: 12px;
+  opacity: 0;
+  transform: translateY(-6px);
+  pointer-events: none;
+  transition: opacity 0.12s ease, transform 0.12s ease;
+  z-index: 80;
+}
+.top-bar .player-card:hover .vp-pop {
+  opacity: 1;
+  transform: translateY(0);
+}
+.vp-pop-title {
+  font-family: var(--font);
+  font-size: 15px;
+  color: var(--accent-2);
+  margin-bottom: 6px;
+}
+.vp-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 8px;
+  align-items: baseline;
+  padding: 2px 0;
+  border-bottom: 1px dotted rgba(255, 244, 220, 0.15);
+  color: var(--muted);
+}
+.vp-row.scoring {
+  color: #fff4dc;
+}
+.vp-row-note {
+  font-size: 10.5px;
+  color: var(--muted);
+  text-align: right;
+}
+.vp-row-points {
+  font-weight: 700;
+  min-width: 24px;
+  text-align: right;
+}
+.vp-row.scoring .vp-row-points {
+  color: var(--accent-2);
+}
+.vp-pop-hint {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* ---------- player cards: let the points pop-out escape the card ---------- */
+.top-bar .player-card {
+  overflow: visible;
+}
+.top-bar .player-card .portrait {
+  border-radius: 8px 0 0 8px;
+}

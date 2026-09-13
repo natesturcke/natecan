@@ -590,7 +590,7 @@ export class BoardScene extends Phaser.Scene {
     const p = VERTEX_PX[v];
     const tint = colorInt(colors[owner]);
     const depth = DEPTH.piece + p.y * 0.001 + 0.0001;
-    const scale = kind === 'city' ? 0.95 : 0.78;
+    const scale = kind === 'city' ? 0.8 : 0.66;
     // Per-player architecture when available (full colour, no tint); neutral tinted art otherwise.
     const styled = `${PIECE_KEYS[kind]}-${owner + 1}`;
     const key = this.has(styled) ? styled : PIECE_KEYS[kind];
@@ -601,7 +601,7 @@ export class BoardScene extends Phaser.Scene {
         .setScale(DISPLAY_SCALE * scale * 1.15);
       if (key !== styled) img.setTint(tint);
       // Coloured base plate so every town is easy to spot and attribute at a glance.
-      const rx = HEX_R * (kind === 'city' ? 0.34 : 0.28);
+      const rx = HEX_R * (kind === 'city' ? 0.3 : 0.25);
       const base = this.add.graphics();
       base.fillStyle(0x000000, 0.28);
       base.fillEllipse(0, HEX_R * 0.02, rx * 2.2, rx * 2.2 * CAMERA_K);

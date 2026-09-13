@@ -179,7 +179,15 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
   const projector = useRef<((hex: number) => { x: number; y: number } | null) | null>(null);
   const [flights, setFlights] = useState<Flight[]>([]);
   const [produce, setProduce] = useState<{ id: number; hexes: number[] } | null>(null);
-  const clearFlights = useCallback(() => setFlights([]), []);
+  const clearFlights = useCallback(() => {
+    setFlights([]);
+    // Safety net: whatever is still held back once every flight has finished, show it.
+    setHeld(bag());
+  }, []);
+  // Cards on their way to your hand are held back from the fan until their flight lands.
+  const [held, setHeld] = useState<ResourceBag>(bag());
+  const hold = useCallback((b: ResourceBag) => setHeld((h) => ({ ...h, ...Object.fromEntries(RESOURCES.map((r) => [r, h[r] + b[r]])) }) as ResourceBag), []);
+  const release = useCallback((r: Resource, n = 1) => setHeld((h) => ({ ...h, [r]: Math.max(0, h[r] - n) })), []);
   // Animations only play for moves made after this screen opened, never for a reopened game's history.
   const historyAtMount = useRef(history.length);
   const freshEntry = (): boolean => history.length > historyAtMount.current;
@@ -187,6 +195,7 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
   const yourMove = state.phase.kind !== 'ended' && currentActor(state) === human;
   const legal = useMemo(() => (yourMove ? legalActions(state, human) : []), [state, human, yourMove]);
   const me = state.players[human];
+  const shownHand = useMemo(() => Object.fromEntries(RESOURCES.map((r) => [r, Math.max(0, me.resources[r] - held[r])])) as ResourceBag, [me.resources, held]);
 
   // Any state change means an action was applied: clear transient selections.
   useEffect(() => {
@@ -303,10 +312,18 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
       const producing = (boardIndex(state.board).hexesByToken.get(total) ?? []).filter((h) => h !== state.robber && !!TERRAIN_RESOURCE[state.board.hexes[h].terrain]);
       // First the rolled tiles light up and throw sparks, then the cards fly out from them.
       const flash = setTimeout(() => setProduce({ id: history.length, hexes: producing }), 2200);
+      // Your new cards stay out of the fan until they visibly arrive.
+      const mine = produced.gains[human];
+      hold(mine);
+      const releaseTimers: ReturnType<typeof setTimeout>[] = [];
       const t = setTimeout(() => {
         const project = projector.current;
-        if (!project) return;
+        if (!project) {
+          for (const r of RESOURCES) if (mine[r] > 0) release(r, mine[r]);
+          return;
+        }
         const list: Flight[] = [];
+        const scheduled = bag();
         let n = 0;
         for (const h of producing) {
           const resource = TERRAIN_RESOURCE[state.board.hexes[h].terrain];
@@ -329,15 +346,22 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
                 to: { x: card.left + card.width / 2, y: card.top + card.height / 2 },
                 delay: n * 260,
               });
+              if (b.owner === human) {
+                scheduled[resource]++;
+                releaseTimers.push(setTimeout(() => release(resource), n * 260 + 3050));
+              }
               n++;
             }
           }
         }
+        // Anything of yours that could not be animated shows up right away.
+        for (const r of RESOURCES) if (mine[r] > scheduled[r]) release(r, mine[r] - scheduled[r]);
         setFlights(list);
       }, 2900);
       return () => {
         clearTimeout(flash);
         clearTimeout(t);
+        releaseTimers.forEach(clearTimeout);
       };
     }
   }, [history, history.length, human, state.players, state.board, state.robber, state.buildings]);
@@ -359,11 +383,21 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
       list.push({ id: `${history.length}-${tag}-${n}`, resource, from, via: { x: (from.x + to.x) / 2 + (n % 3) * 30, y: (from.y + to.y) / 2 }, to, delay: n * 260 });
       n++;
     };
+    const releaseTimers: ReturnType<typeof setTimeout>[] = [];
+    // A card flying into your hand stays hidden from the fan until it lands.
+    const flyToMe = (r: Resource, from: { x: number; y: number } | null, to: { x: number; y: number } | null, tag: string) => {
+      const before = list.length;
+      fly(r, from, to, tag);
+      if (list.length > before) {
+        hold({ ...bag(), [r]: 1 });
+        releaseTimers.push(setTimeout(() => release(r), list[list.length - 1].delay + 3050));
+      }
+    };
     for (const ev of last.events) {
       if (ev.type === 'traded') {
         for (const r of RESOURCES) {
-          for (let i = 0; i < ev.gave[r]; i++) fly(r, spot(ev.from, r), spot(ev.to, r), 'gave');
-          for (let i = 0; i < ev.got[r]; i++) fly(r, spot(ev.to, r), spot(ev.from, r), 'got');
+          for (let i = 0; i < ev.gave[r]; i++) (ev.to === human ? flyToMe : fly)(r, spot(ev.from, r), spot(ev.to, r), 'gave');
+          for (let i = 0; i < ev.got[r]; i++) (ev.from === human ? flyToMe : fly)(r, spot(ev.to, r), spot(ev.from, r), 'got');
         }
       } else if (ev.type === 'discarded') {
         const board = document.querySelector('.board-area')?.getBoundingClientRect();
@@ -373,7 +407,8 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
       }
     }
     if (list.length > 0) setFlights(list);
-  }, [history, history.length, human]);
+    return () => releaseTimers.forEach(clearTimeout);
+  }, [history, history.length, human, hold, release]);
 
   /** Whether the hovered corner is one of your settlements awaiting a city upgrade (idle or city mode). */
   const hoverIsCity = useMemo(
@@ -544,7 +579,7 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
             <footer className="bottom-bar">
               <section className="bar-hand">
                 <div className="section-title">Your hand</div>
-                <PlayerHand resources={me.resources} />
+                <PlayerHand resources={shownHand} />
               </section>
               <section className="bar-dev">
                 <DevCardPanel state={state} human={human} onPlay={onPlayDev} />

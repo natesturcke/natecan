@@ -22,16 +22,18 @@ export function ActionBar(p: ActionBarProps): React.JSX.Element {
   return (
     <div className="action-bar">
       <div className="trading-post" title={inMain ? 'Trade resources' : 'You can trade during your turn, after rolling'}>
-        <button className="btn small" disabled={!inMain} onClick={p.onMaritime} title="Trade resources with the bank at 4:1, or better with a harbour">
-          Trade with Bank
-        </button>
         <div className="trading-post-centre">
           {!artMissing && <img className="trading-post-art" src={uiArtPath(UI_ART.tradingPost)} alt="" draggable={false} onError={() => setArtMissing(true)} />}
           <div className="trading-post-title">Trading Post</div>
         </div>
-        <button className="btn small" disabled={!inMain} onClick={p.onTrade} title="Offer a trade to the other players">
-          Trade with Players
-        </button>
+        <div className="trading-post-stack">
+          <button className="btn small" disabled={!inMain} onClick={p.onMaritime} title="Trade resources with the bank at 4:1, or better with a harbour">
+            Trade with Bank
+          </button>
+          <button className="btn small" disabled={!inMain} onClick={p.onTrade} title="Offer a trade to the other players">
+            Trade with Players
+          </button>
+        </div>
       </div>
       <div className="row bottom">
         <button className="btn" onClick={p.onRules}>

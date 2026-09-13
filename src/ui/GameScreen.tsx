@@ -171,6 +171,9 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
   const projector = useRef<((hex: number) => { x: number; y: number } | null) | null>(null);
   const [flights, setFlights] = useState<Flight[]>([]);
   const clearFlights = useCallback(() => setFlights([]), []);
+  // Animations only play for moves made after this screen opened, never for a reopened game's history.
+  const historyAtMount = useRef(history.length);
+  const freshEntry = (): boolean => history.length > historyAtMount.current;
 
   const yourMove = state.phase.kind !== 'ended' && currentActor(state) === human;
   const legal = useMemo(() => (yourMove ? legalActions(state, human) : []), [state, human, yourMove]);
@@ -265,7 +268,7 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
   // Show a physical dice roll whenever a diceRolled event lands, followed by its outcome.
   useEffect(() => {
     const last = history.at(-1);
-    if (!last) return;
+    if (!last || !freshEntry()) return;
     const rolled = last.events.find((e) => e.type === 'diceRolled');
     if (!rolled || rolled.type !== 'diceRolled') return;
     const who = rolled.player === human ? 'You' : state.players[rolled.player].name;
@@ -325,7 +328,7 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
   // Cards physically change hands: trades fly between the two players, discards fly to a pile below the island.
   useEffect(() => {
     const last = history.at(-1);
-    if (!last) return;
+    if (!last || !freshEntry()) return;
     const centre = (sel: string): { x: number; y: number } | null => {
       const r = document.querySelector(sel)?.getBoundingClientRect();
       return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null;

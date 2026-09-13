@@ -4013,3 +4013,28 @@ button.pick:disabled {
 .side-bar .action-bar .row.bottom .btn {
   background: rgba(12, 20, 28, 0.72);
 }
+
+/* ---------- never scroll: the canvas fills the board area instead of sizing it ---------- */
+html,
+body {
+  overflow: hidden;
+}
+.game-screen,
+.game-body {
+  min-height: 0;
+  overflow: hidden;
+}
+.board-area {
+  min-height: 0;
+  overflow: hidden;
+}
+.phaser-host {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  height: auto;
+}
+.phaser-host canvas {
+  width: 100% !important;
+  height: 100% !important;
+}

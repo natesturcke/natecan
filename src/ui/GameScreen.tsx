@@ -538,7 +538,7 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
               </section>
               <section className="bar-log">
                 <div className="section-title">Log</div>
-                <TurnLog lines={logLines} />
+                <TurnLog lines={logLines} state={state} human={human} />
               </section>
             </footer>
           </div>

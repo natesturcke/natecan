@@ -2526,3 +2526,27 @@ button.pick:disabled {
   font-size: 12px;
   padding: 5px 10px;
 }
+
+/* ---------- log: tiny character icons ---------- */
+.log-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.log-portrait {
+  width: 13px;
+  height: 18px;
+  border-radius: 3px;
+  flex: none;
+  box-shadow: 0 0 0 1px rgba(255, 240, 210, 0.3);
+}
+.log-portrait.fallback {
+  font-size: 8px;
+}
+.log-portrait.spacer {
+  box-shadow: none;
+  background: transparent;
+}
+.log-text {
+  min-width: 0;
+}

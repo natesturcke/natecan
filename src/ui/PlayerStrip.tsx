@@ -24,6 +24,16 @@ export function PlayerStrip({ state, human }: { state: GameState; human: PlayerI
                   {vp}
                   {p.id !== human && p.devCards.length > 0 ? '+' : ''}
                 </span>
+                <span className="player-meters">
+                  <span className={`meter ${state.longestRoad.holder === p.id ? 'held' : ''}`} title={`Longest continuous road: ${p.roadLength}${state.longestRoad.holder === p.id ? ' (holds Longest Road, 2 points)' : ''}`}>
+                    <span className="meter-icon">▬</span>
+                    {p.roadLength}
+                  </span>
+                  <span className={`meter ${state.largestArmy.holder === p.id ? 'held' : ''}`} title={`Knights played: ${p.knightsPlayed}${state.largestArmy.holder === p.id ? ' (holds Largest Army, 2 points)' : ''}`}>
+                    <span className="meter-icon">⚔</span>
+                    {p.knightsPlayed}
+                  </span>
+                </span>
               </div>
               <div className="player-stats">
                 <span title="Resource cards in hand">{bagTotal(p.resources)} cards</span>

@@ -68,12 +68,13 @@ export function DevCardPanel({ state, human, onPlay }: { state: GameState; human
         })}
       </div>
       {looking && (
-        <Modal title={DEV_LABEL[looking.card]} onClose={() => setInspect(null)}>
+        <Modal title={DEV_LABEL[looking.card]} onClose={() => setInspect(null)} spotlight>
           <div className="dev-inspect">
             <div className="dev-inspect-art">
               <DevFace card={looking.card} />
             </div>
             <div className="dev-inspect-body">
+              <h2 className="dev-inspect-title">{DEV_LABEL[looking.card]}</h2>
               <p className="dev-inspect-text">{DEV_DESCRIPTION[looking.card]}</p>
               <p className="muted dev-inspect-rule">
                 {looking.card === 'victoryPoint'

@@ -3423,3 +3423,58 @@ button.pick:disabled {
   font-size: 13px;
   line-height: 1.4;
 }
+
+/* ---------- card spotlight: the card itself is the dialog ---------- */
+.modal.spotlight {
+  width: auto;
+  max-width: min(720px, calc(100% - 32px));
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  overflow: visible;
+}
+.modal.spotlight .dev-inspect {
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+.modal.spotlight .dev-inspect-art .card-face {
+  width: 252px;
+  height: 354px;
+  border-radius: 16px;
+  box-shadow:
+    0 0 0 3px rgba(255, 244, 220, 0.5),
+    0 0 40px rgba(243, 201, 107, 0.35),
+    0 30px 70px rgba(0, 0, 0, 0.7);
+  animation: spotlight-in 0.22s ease-out;
+}
+@keyframes spotlight-in {
+  from {
+    transform: translateY(24px) scale(0.85);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+.modal.spotlight .dev-inspect-body {
+  width: min(520px, 100%);
+  padding: 14px 18px;
+  border-radius: 14px;
+  background: rgba(28, 22, 16, 0.92);
+  border: 1px solid rgba(255, 236, 200, 0.28);
+  text-align: center;
+}
+.dev-inspect-title {
+  margin: 0 0 6px;
+  color: var(--accent-2);
+  font-size: 24px;
+}
+.modal.spotlight .dev-inspect-text {
+  margin: 0 0 6px;
+}
+.modal.spotlight .modal-actions {
+  justify-content: center;
+}

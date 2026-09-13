@@ -10,22 +10,24 @@ export function PlayerStrip({ state, human }: { state: GameState; human: PlayerI
   return (
     <div className="player-strip">
       {state.players.map((p) => {
-        const vp = p.id === human ? totalVictoryPoints(state, p.id) : publicVictoryPoints(state, p.id);
+        // Once the game is over every hidden card is revealed, so show true totals for all.
+        const revealed = state.phase.kind === 'ended';
+        const vp = p.id === human || revealed ? totalVictoryPoints(state, p.id) : publicVictoryPoints(state, p.id);
         const isTurn = state.turn.current === p.id && state.phase.kind !== 'ended';
         const isActor = actor === p.id;
         const hasRoad = state.longestRoad.holder === p.id;
         const hasArmy = state.largestArmy.holder === p.id;
-        const hidden = p.id !== human && p.devCards.length > 0;
+        const hidden = p.id !== human && !revealed && p.devCards.length > 0;
         // Where the points come from.
         const settlements = state.buildings.filter((b) => b && b.owner === p.id && b.kind === 'settlement').length;
         const cities = state.buildings.filter((b) => b && b.owner === p.id && b.kind === 'city').length;
-        const vpCards = p.id === human ? p.devCards.filter((c) => c === 'victoryPoint').length : 0;
+        const vpCards = p.id === human || revealed ? p.devCards.filter((c) => c === 'victoryPoint').length : 0;
         const breakdown: { label: string; points: number; note?: string }[] = [
           { label: `${settlements} settlement${settlements === 1 ? '' : 's'}`, points: settlements, note: '1 point each' },
           { label: `${cities} cit${cities === 1 ? 'y' : 'ies'}`, points: cities * 2, note: '2 points each' },
           { label: 'Longest Road', points: hasRoad ? 2 : 0, note: hasRoad ? `held with ${p.roadLength}` : 'needs 5+ roads and the most' },
           { label: 'Largest Army', points: hasArmy ? 2 : 0, note: hasArmy ? `held with ${p.knightsPlayed} knights` : 'needs 3+ knights and the most' },
-          ...(p.id === human ? [{ label: `${vpCards} Victory Point card${vpCards === 1 ? '' : 's'}`, points: vpCards, note: 'hidden from others' }] : []),
+          ...(p.id === human || revealed ? [{ label: `${vpCards} Victory Point card${vpCards === 1 ? '' : 's'}`, points: vpCards, note: revealed ? 'revealed at the end' : 'hidden from others' }] : []),
         ];
         const facts: { label: string; value: string; title: string; held?: boolean }[] = [
           {

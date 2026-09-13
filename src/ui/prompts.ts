@@ -3,6 +3,7 @@ import { COSTS, DISCARD_THRESHOLD } from '@/engine/constants';
 import { legalActions } from '@/engine/legal';
 import { discardCount } from '@/engine/rules/trade';
 import { currentActor } from '@/engine/state';
+import { hiddenVictoryPoints, totalVictoryPoints } from '@/engine/rules/victory';
 import type { GameState, PlayerId } from '@/engine/types';
 import type { Mode, Pending } from './interaction';
 import { bagText } from './text';
@@ -37,9 +38,24 @@ export function describeStep(state: GameState, human: PlayerId, mode: Mode, pend
 
   if (phase.kind === 'ended') {
     const winner = phase.winner;
+    const total = totalVictoryPoints(state, winner);
+    const settlements = state.buildings.filter((b) => b && b.owner === winner && b.kind === 'settlement').length;
+    const cities = state.buildings.filter((b) => b && b.owner === winner && b.kind === 'city').length;
+    const vpCards = hiddenVictoryPoints(state, winner);
+    const parts: string[] = [];
+    if (settlements > 0) parts.push(`${settlements} settlement${settlements === 1 ? '' : 's'} (${settlements})`);
+    if (cities > 0) parts.push(`${cities} cit${cities === 1 ? 'y' : 'ies'} (${cities * 2})`);
+    if (state.longestRoad.holder === winner) parts.push('Longest Road (2)');
+    if (state.largestArmy.holder === winner) parts.push('Largest Army (2)');
+    if (vpCards > 0) parts.push(`${vpCards} hidden Victory Point card${vpCards === 1 ? '' : 's'} (${vpCards})`);
+    const how = `${parts.join(' + ')} = ${total} points.`;
     return winner === human
-      ? { title: 'You reached 10 points. You win!', yourMove: false }
-      : { title: `${name(winner)} wins with 10 points.`, detail: 'Start a new game from the menu.', yourMove: false };
+      ? { title: `You reached ${total} points. You win!`, detail: how, yourMove: false }
+      : {
+          title: `${name(winner)} wins with ${total} points.`,
+          detail: `${how}${vpCards > 0 ? ` The hidden card${vpCards === 1 ? '' : 's'} explain${vpCards === 1 ? 's' : ''} why the visible score looked lower.` : ''} Start a new game from the menu.`,
+          yourMove: false,
+        };
   }
 
   if (pending) {

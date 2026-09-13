@@ -449,7 +449,7 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
   const prompt = describeStep(state, human, mode, pending);
   // No instruction card while the dice are still on screen: the next step waits until the roll is read.
   const showPrompt = !pending && !diceRoll && !((state.phase.kind === 'tradeOffer' || state.phase.kind === 'discard') && yourMove);
-  const promptCentered = yourMove && state.phase.kind !== 'main' && highlights === NO_HIGHLIGHTS;
+  const promptCentered = state.phase.kind === 'ended' || (yourMove && state.phase.kind !== 'main' && highlights === NO_HIGHLIGHTS);
   const barInsets = useBarInsets();
 
   // ----- prompt bar buttons -----

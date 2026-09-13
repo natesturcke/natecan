@@ -49,13 +49,7 @@ export function describeStep(state: GameState, human: PlayerId, mode: Mode, pend
     if (state.largestArmy.holder === winner) parts.push('Largest Army (2)');
     if (vpCards > 0) parts.push(`${vpCards} hidden Victory Point card${vpCards === 1 ? '' : 's'} (${vpCards})`);
     const how = `${parts.join(' + ')} = ${total} points.`;
-    return winner === human
-      ? { title: `You reached ${total} points. You win!`, detail: how, yourMove: false }
-      : {
-          title: `${name(winner)} wins with ${total} points.`,
-          detail: `${how}${vpCards > 0 ? ` The hidden card${vpCards === 1 ? '' : 's'} explain${vpCards === 1 ? 's' : ''} why the visible score looked lower.` : ''} Start a new game from the menu.`,
-          yourMove: false,
-        };
+    return winner === human ? { title: `You reached ${total} points. You win!`, detail: how, yourMove: false } : { title: `${name(winner)} wins with ${total} points.`, detail: how, yourMove: false };
   }
 
   if (pending) {

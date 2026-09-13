@@ -40,6 +40,7 @@ import { TradeDialog } from './dialogs/TradeDialog';
 import { TradeResolveDialog } from './dialogs/TradeResolveDialog';
 import { TradeOfferDialog } from './dialogs/TradeOfferDialog';
 import { DiscardDialog } from './dialogs/DiscardDialog';
+import { GameOver } from './GameOver';
 import { bagText } from './text';
 
 export interface GameScreenProps {
@@ -448,7 +449,7 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
 
   const prompt = describeStep(state, human, mode, pending);
   // No instruction card while the dice are still on screen: the next step waits until the roll is read.
-  const showPrompt = !pending && !diceRoll && !((state.phase.kind === 'tradeOffer' || state.phase.kind === 'discard') && yourMove);
+  const showPrompt = !pending && !diceRoll && state.phase.kind !== 'ended' && !((state.phase.kind === 'tradeOffer' || state.phase.kind === 'discard') && yourMove);
   const promptCentered = state.phase.kind === 'ended' || (yourMove && state.phase.kind !== 'main' && highlights === NO_HIGHLIGHTS);
   const barInsets = useBarInsets();
 
@@ -663,6 +664,7 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
         />
       )}
       </Presence>
+      <Presence show={phase.kind === 'ended'}>{phase.kind === 'ended' && <GameOver state={state} human={human} onMenu={onQuit} />}</Presence>
       <Presence show={phase.kind === 'discard' && yourMove}>
         {phase.kind === 'discard' && yourMove && (
           <DiscardDialog state={state} human={human} pick={discardPick} onToggle={toggleDiscard} onConfirm={() => dispatch({ player: human, type: 'DISCARD', resources: discardPick })} />

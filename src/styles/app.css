@@ -3910,3 +3910,69 @@ button.pick:disabled {
 .game-screen.wide .review-bar {
   bottom: 40px;
 }
+
+/* ---------- slimmer side columns ---------- */
+.side-bar {
+  width: 300px;
+  padding: 10px;
+  gap: 10px;
+}
+.game-screen.wide .below-bar {
+  left: 322px;
+  right: 322px;
+}
+.side-bar .bar-hand .hand-arc {
+  height: 126px;
+}
+.side-bar .bar-hand .hand-card-btn {
+  top: 0;
+}
+.side-bar .bar-build button.btn.build {
+  padding: 4px 8px;
+}
+.side-bar .bar-build .build-label {
+  font-size: 12.5px;
+}
+.side-bar .bar-build .reason {
+  font-size: 10px;
+}
+.side-bar .player-card .portrait {
+  width: 48px;
+}
+.side-bar .player-body {
+  padding: 4px 0 5px;
+}
+.side-bar .player-name {
+  font-size: 12.5px;
+}
+.side-bar .player-facts dt {
+  font-size: 10px;
+  line-height: 13px;
+}
+.side-bar .player-facts dd {
+  font-size: 11px;
+  line-height: 13px;
+}
+.side-bar .player-facts .fact:first-child dt,
+.side-bar .player-facts .fact:first-child dd {
+  font-size: 11.5px;
+}
+.side-bar .trading-post {
+  gap: 8px;
+  padding: 2px 6px 2px 4px;
+}
+.side-bar .trading-post-art {
+  width: 84px;
+  height: 48px;
+}
+.side-bar .trading-post-stack .btn.small {
+  font-size: 12px;
+  padding: 4px 9px;
+}
+.side-bar .bar-log {
+  min-height: 120px;
+}
+.side-bar .bar-log .turn-log {
+  min-height: 120px;
+  font-size: 12px;
+}

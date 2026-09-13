@@ -2407,3 +2407,23 @@ button.pick:disabled {
     grid-template-areas: 'players . controls';
   }
 }
+
+/* ---------- log: fixed height, always scrolls, never grows the bar ---------- */
+.bar-log {
+  min-height: 0;
+}
+.bar-log .turn-log {
+  flex: 1 1 auto;
+  height: 150px;
+  min-height: 150px;
+  max-height: 150px;
+  overflow-y: auto;
+}
+@media (max-width: 1250px) {
+  .bottom-bar {
+    overflow-y: visible;
+  }
+  .bar-log {
+    min-height: 0;
+  }
+}

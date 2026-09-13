@@ -2775,3 +2775,25 @@ button.pick:disabled {
     linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0) 55%),
     rgba(16, 24, 32, 0.5);
 }
+
+/* ---------- bars: real waves visible behind, only a whisper of frost ---------- */
+.top-bar,
+.bottom-bar {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.04) 40%, rgba(255, 255, 255, 0) 65%, rgba(0, 0, 0, 0.1) 100%),
+    rgba(14, 26, 38, 0.28);
+  backdrop-filter: blur(1.5px) saturate(1.3);
+  -webkit-backdrop-filter: blur(1.5px) saturate(1.3);
+}
+.top-bar .player-card,
+.trading-post,
+.bar-build button.btn.build,
+.bar-log .turn-log {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0) 55%),
+    rgba(12, 20, 28, 0.62);
+}
+.instruction-card.below {
+  backdrop-filter: blur(2px) saturate(1.3);
+  -webkit-backdrop-filter: blur(2px) saturate(1.3);
+}

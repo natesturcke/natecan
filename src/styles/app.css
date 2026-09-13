@@ -3478,3 +3478,52 @@ button.pick:disabled {
 .modal.spotlight .modal-actions {
   justify-content: center;
 }
+
+/* ---------- development cards: hover pop-out ---------- */
+.dev-card-wrap {
+  position: relative;
+}
+.dev-pop {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 10px);
+  transform: translateX(-50%) translateY(6px) scale(0.97);
+  width: 240px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(20, 16, 12, 0.95);
+  border: 1px solid var(--accent);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.6);
+  color: #fff4dc;
+  font-size: 12px;
+  line-height: 1.35;
+  text-align: left;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease, transform 0.12s ease;
+  z-index: 70;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.dev-card-wrap:hover .dev-pop {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0) scale(1);
+}
+.dev-pop-title {
+  font-family: var(--font);
+  font-size: 15px;
+  color: var(--accent-2);
+}
+.dev-pop-status.good {
+  color: var(--good);
+  font-weight: 600;
+}
+.dev-pop-status.bad {
+  color: var(--bad);
+  font-weight: 600;
+}
+.dev-pop-hint {
+  color: var(--muted);
+  font-size: 11px;
+}

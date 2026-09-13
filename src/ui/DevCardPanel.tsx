@@ -54,9 +54,15 @@ export function DevCardPanel({ state, human, onPlay }: { state: GameState; human
           const reason = reasonFor(card, isNew);
           return (
             <div key={i} className={`dev-card-wrap ${isNew ? 'new' : ''}`}>
-              <button type="button" className="dev-face-btn" title={`${DEV_LABEL[card]}: click to read it`} onClick={() => setInspect(i)}>
+              <button type="button" className="dev-face-btn" aria-label={`${DEV_LABEL[card]}: click to see it bigger`} onClick={() => setInspect(i)}>
                 <DevFace card={card} />
               </button>
+              <span className="dev-pop" aria-hidden="true">
+                <span className="dev-pop-title">{DEV_LABEL[card]}</span>
+                <span className="dev-pop-text">{DEV_DESCRIPTION[card]}</span>
+                <span className={`dev-pop-status ${reason ? 'bad' : 'good'}`}>{card === 'victoryPoint' ? 'Counts automatically' : (reason ?? 'Playable now')}</span>
+                <span className="dev-pop-hint">Click the card to see it bigger</span>
+              </span>
               {card !== 'victoryPoint' && (
                 <button className="btn small dev-play" disabled={!!reason} title={reason ?? DEV_DESCRIPTION[card]} onClick={(e) => onPlay(card, e)}>
                   Play

@@ -3040,3 +3040,77 @@ button.pick:disabled {
     display: inline-flex;
   }
 }
+
+/* ---------- player chips: labelled facts stacked vertically ---------- */
+.top-bar {
+  min-height: 0;
+}
+.top-bar .player-card {
+  align-items: flex-start;
+  padding: 6px 10px 6px 6px;
+}
+.top-bar .player-card .portrait {
+  width: 46px;
+  height: 64px;
+  margin-top: 2px;
+}
+.top-bar .player-head {
+  margin-bottom: 2px;
+}
+.top-bar .player-head .swatch {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+}
+.top-bar .player-name {
+  font-size: 13px;
+}
+.top-bar .player-stats,
+.top-bar .player-meters,
+.top-bar .player-badges,
+.top-bar .vp {
+  display: none;
+}
+.player-facts {
+  display: grid;
+  grid-template-columns: auto auto;
+  column-gap: 8px;
+  row-gap: 0;
+  margin: 0;
+}
+.player-facts .fact {
+  display: contents;
+}
+.player-facts dt {
+  font-size: 10.5px;
+  line-height: 14px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.player-facts dd {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 14px;
+  font-weight: 700;
+  text-align: right;
+  color: #fff4dc;
+  white-space: nowrap;
+}
+.player-facts .fact:first-child dt,
+.player-facts .fact:first-child dd {
+  color: var(--accent-2);
+  font-size: 12px;
+}
+.player-facts .fact.held dt,
+.player-facts .fact.held dd {
+  color: var(--accent-2);
+}
+.fact-star {
+  margin-left: 3px;
+  font-size: 10px;
+}
+@media (max-width: 1400px) {
+  .top-bar .player-facts dt {
+    font-size: 10px;
+  }
+}

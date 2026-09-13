@@ -3976,3 +3976,40 @@ button.pick:disabled {
   min-height: 120px;
   font-size: 12px;
 }
+
+/* ---------- widescreen columns: no frame, contents float over the water ---------- */
+.side-bar {
+  background: none;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  padding: 8px 6px;
+  pointer-events: none;
+}
+.side-bar > * {
+  pointer-events: auto;
+}
+.side-bar .section-title {
+  color: #fff4dc;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
+}
+.side-bar .player-card {
+  opacity: 0.92;
+}
+.side-bar .player-card.turn,
+.side-bar .player-card.actor {
+  opacity: 1;
+}
+.side-bar .bar-build button.btn.build,
+.side-bar .trading-post,
+.side-bar .bar-log .turn-log {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0) 55%),
+    rgba(12, 20, 28, 0.72);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.side-bar .action-bar .row.bottom .btn {
+  background: rgba(12, 20, 28, 0.72);
+}

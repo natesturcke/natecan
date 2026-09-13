@@ -451,6 +451,9 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
   // No instruction card while the dice are still on screen: the next step waits until the roll is read.
   const showPrompt = !pending && !diceRoll && state.phase.kind !== 'ended' && !((state.phase.kind === 'tradeOffer' || state.phase.kind === 'discard') && yourMove);
   const promptCentered = state.phase.kind === 'ended' || (yourMove && state.phase.kind !== 'main' && highlights === NO_HIGHLIGHTS);
+  // Board tooltips stay quiet while any dialog is up.
+  const modalOpen =
+    dialog.kind !== 'none' || state.phase.kind === 'ended' || ((state.phase.kind === 'tradeOffer' || state.phase.kind === 'tradeResolve' || state.phase.kind === 'discard') && yourMove);
   const barInsets = useBarInsets();
 
   // ----- prompt bar buttons -----
@@ -566,15 +569,15 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
                 </div>
               )}
             </Presence>
-            {hover && hoverText && hover.kind === 'vertex' && !hoverIsCity && <CornerTooltip state={state} vertex={hover.id} action={hoverText} x={hover.x} y={hover.y} />}
-            {hover && hoverText && (hover.kind !== 'vertex' || hoverIsCity) && (
+            {!modalOpen && hover && hoverText && hover.kind === 'vertex' && !hoverIsCity && <CornerTooltip state={state} vertex={hover.id} action={hoverText} x={hover.x} y={hover.y} />}
+            {!modalOpen && hover && hoverText && (hover.kind !== 'vertex' || hoverIsCity) && (
               <div className="hover-tip" style={{ left: hover.x, top: hover.y }}>
                 {hoverText}
               </div>
             )}
             {/* While moving the robber, keep the piece and tile tooltips up so you can see who a hex borders. */}
-            {pieceHover && (!hover || phase.kind === 'moveRobber') && !pending && <PieceTooltip state={state} human={human} hover={pieceHover} />}
-            {tileHover && !pieceHover && (!hover || phase.kind === 'moveRobber') && !pending && <TileTooltip state={state} human={human} hover={tileHover} />}
+            {!modalOpen && pieceHover && (!hover || phase.kind === 'moveRobber') && !pending && <PieceTooltip state={state} human={human} hover={pieceHover} />}
+            {!modalOpen && tileHover && !pieceHover && (!hover || phase.kind === 'moveRobber') && !pending && <TileTooltip state={state} human={human} hover={tileHover} />}
             <DiceOverlay roll={diceRoll} onDone={clearDice} autoDismiss={fast} />
             <ResourceFlights flights={flights} onDone={clearFlights} />
             {/* Top bar: who is at the table, and the table-side controls. */}

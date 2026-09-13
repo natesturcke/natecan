@@ -4234,3 +4234,36 @@ body {
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
 }
+
+/* ---------- tablets: buy a development card from the trading post ---------- */
+.buy-dev-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+/* ---------- tablets: development card shop beside the trading post ---------- */
+.btn.dev-shop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 12px;
+  align-self: stretch;
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0) 55%),
+    rgba(12, 20, 28, 0.72);
+  border: 1px solid rgba(255, 236, 200, 0.2);
+}
+.dev-shop-title {
+  font-family: var(--font);
+  font-size: 13px;
+  color: var(--accent-2);
+  white-space: nowrap;
+}
+.dev-shop-left {
+  font-size: 11px;
+}

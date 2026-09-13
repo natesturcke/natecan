@@ -2,6 +2,8 @@ import { useState } from 'react';
 import type { GameState, PlayerId } from '@/engine/types';
 import { currentActor } from '@/engine/state';
 import { UI_ART, uiArtPath } from './uiArt';
+import { COSTS } from '@/engine/constants';
+import { CostIcons } from './ResourceIcon';
 
 export interface ActionBarProps {
   state: GameState;
@@ -11,6 +13,8 @@ export interface ActionBarProps {
   onRules: () => void;
   /** When set, the log is hidden elsewhere and this opens it. */
   onLog?: () => void;
+  /** When set (tablets), the trading post also sells development cards. */
+  buyDev?: { reason: string | null; left: number; onBuy: (e: React.MouseEvent<HTMLButtonElement>) => void };
   onQuit: () => void;
 }
 
@@ -35,6 +39,13 @@ export function ActionBar(p: ActionBarProps): React.JSX.Element {
           </button>
         </div>
       </div>
+      {p.buyDev && (
+        <button className="btn dev-shop" disabled={!!p.buyDev.reason} onClick={p.buyDev.onBuy} title={p.buyDev.reason ?? 'Buy a development card for 1 Ore, 1 Grain, 1 Wool'}>
+          <span className="dev-shop-title">Development card</span>
+          <CostIcons cost={COSTS.devCard} size={14} />
+          <span className="muted dev-shop-left">{p.buyDev.left} left</span>
+        </button>
+      )}
       <div className="row bottom">
         {p.onLog && (
           <button className="btn" onClick={p.onLog}>

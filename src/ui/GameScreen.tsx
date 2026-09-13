@@ -120,21 +120,27 @@ interface BarInsets {
   headerBottom: number;
 }
 
-/** Measures the bars and the instruction card so the island always fits the space between them. */
-function useBarInsets(promptKey: string): BarInsets {
+/** Room reserved under the header for the instruction card, whether or not one is showing. */
+const CARD_ALLOWANCE = 64;
+
+/**
+ * Measures the two bars so the island fits between them. The instruction card is deliberately
+ * not measured: it comes and goes with every click, and refitting the camera each time made the
+ * island jump. A fixed allowance keeps the view steady instead.
+ */
+function useBarInsets(): BarInsets {
   const [insets, setInsets] = useState<BarInsets>(BOARD_INSETS);
   useEffect(() => {
     const measure = () => {
       const area = document.querySelector('.board-area')?.getBoundingClientRect();
       const top = document.querySelector('.top-bar')?.getBoundingClientRect();
       const bottom = document.querySelector('.bottom-bar')?.getBoundingClientRect();
-      const card = document.querySelector('.below-bar')?.getBoundingClientRect();
       if (!area) return;
       const headerBottom = top ? Math.round(top.bottom - area.top + 10) : BOARD_INSETS.headerBottom;
       const next: BarInsets = {
         left: 16,
         right: 16,
-        top: card ? Math.round(card.bottom - area.top + 12) : headerBottom + 8,
+        top: headerBottom + CARD_ALLOWANCE,
         bottom: bottom ? Math.round(area.bottom - bottom.top + 12) : BOARD_INSETS.bottom,
         headerBottom,
       };
@@ -142,7 +148,7 @@ function useBarInsets(promptKey: string): BarInsets {
     };
     measure();
     const ro = new ResizeObserver(measure);
-    for (const sel of ['.top-bar', '.bottom-bar', '.board-area', '.below-bar']) {
+    for (const sel of ['.top-bar', '.bottom-bar', '.board-area']) {
       const el = document.querySelector(sel);
       if (el) ro.observe(el);
     }
@@ -151,7 +157,7 @@ function useBarInsets(promptKey: string): BarInsets {
       ro.disconnect();
       window.removeEventListener('resize', measure);
     };
-  }, [promptKey]);
+  }, []);
   return insets;
 }
 
@@ -396,8 +402,7 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
   const prompt = describeStep(state, human, mode, pending);
   const showPrompt = !pending && !((state.phase.kind === 'tradeOffer' || state.phase.kind === 'discard') && yourMove);
   const promptCentered = yourMove && state.phase.kind !== 'main' && highlights === NO_HIGHLIGHTS;
-  // Re-measure whenever the card's text changes, since its height sets where the island starts.
-  const barInsets = useBarInsets(`${showPrompt && !promptCentered ? prompt.title + (prompt.detail ?? '') : ''}`);
+  const barInsets = useBarInsets();
 
   // ----- prompt bar buttons -----
   const buttons: PromptButton[] = [];

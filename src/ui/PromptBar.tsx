@@ -17,10 +17,12 @@ export interface PromptBarProps {
   centered?: boolean;
   /** Floating only: rendered inside the header bar rather than over the board. */
   docked?: boolean;
+  /** Floating only: a compact card sitting just below the header. */
+  below?: boolean;
 }
 
-export function PromptBar({ prompt, buttons, floating, centered, docked }: PromptBarProps): React.JSX.Element {
-  const cls = floating ? `instruction-card ${centered ? 'centered' : ''} ${docked ? 'docked' : ''}` : 'prompt-bar';
+export function PromptBar({ prompt, buttons, floating, centered, docked, below }: PromptBarProps): React.JSX.Element {
+  const cls = floating ? `instruction-card ${centered ? 'centered' : ''} ${docked ? 'docked' : ''} ${below ? 'below' : ''}` : 'prompt-bar';
   return (
     <div className={`${cls} ${prompt.yourMove ? 'yours' : 'theirs'}`} role="status" aria-live="polite">
       <div className="prompt-text">

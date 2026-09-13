@@ -107,28 +107,40 @@ function ghostFor(pending: Pending | null, human: PlayerId): Ghost {
 }
 
 /** Fallback screen space for the bars until they have been measured. */
-const BOARD_INSETS = { left: 16, right: 16, top: 100, bottom: 214 };
+const BOARD_INSETS = { left: 16, right: 16, top: 100, bottom: 214, headerBottom: 90 };
 
-/** Measures the top and bottom bars so the island always fits the space between them. */
-function useBarInsets(): { left: number; right: number; top: number; bottom: number } {
-  const [insets, setInsets] = useState(BOARD_INSETS);
+interface BarInsets {
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+  /** Where the instruction card goes: just under the header, in board-area pixels. */
+  headerBottom: number;
+}
+
+/** Measures the bars and the instruction card so the island always fits the space between them. */
+function useBarInsets(promptKey: string): BarInsets {
+  const [insets, setInsets] = useState<BarInsets>(BOARD_INSETS);
   useEffect(() => {
     const measure = () => {
       const area = document.querySelector('.board-area')?.getBoundingClientRect();
       const top = document.querySelector('.top-bar')?.getBoundingClientRect();
       const bottom = document.querySelector('.bottom-bar')?.getBoundingClientRect();
+      const card = document.querySelector('.below-bar')?.getBoundingClientRect();
       if (!area) return;
-      const next = {
+      const headerBottom = top ? Math.round(top.bottom - area.top + 10) : BOARD_INSETS.headerBottom;
+      const next: BarInsets = {
         left: 16,
         right: 16,
-        top: top ? Math.round(top.bottom - area.top + 12) : BOARD_INSETS.top,
+        top: card ? Math.round(card.bottom - area.top + 12) : headerBottom + 8,
         bottom: bottom ? Math.round(area.bottom - bottom.top + 12) : BOARD_INSETS.bottom,
+        headerBottom,
       };
-      setInsets((cur) => (cur.top === next.top && cur.bottom === next.bottom ? cur : next));
+      setInsets((cur) => (cur.top === next.top && cur.bottom === next.bottom && cur.headerBottom === next.headerBottom ? cur : next));
     };
     measure();
     const ro = new ResizeObserver(measure);
-    for (const sel of ['.top-bar', '.bottom-bar', '.board-area']) {
+    for (const sel of ['.top-bar', '.bottom-bar', '.board-area', '.below-bar']) {
       const el = document.querySelector(sel);
       if (el) ro.observe(el);
     }
@@ -137,7 +149,7 @@ function useBarInsets(): { left: number; right: number; top: number; bottom: num
       ro.disconnect();
       window.removeEventListener('resize', measure);
     };
-  }, []);
+  }, [promptKey]);
   return insets;
 }
 
@@ -160,7 +172,6 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
   const [flights, setFlights] = useState<Flight[]>([]);
   const clearFlights = useCallback(() => setFlights([]), []);
 
-  const barInsets = useBarInsets();
   const yourMove = state.phase.kind !== 'ended' && currentActor(state) === human;
   const legal = useMemo(() => (yourMove ? legalActions(state, human) : []), [state, human, yourMove]);
   const me = state.players[human];
@@ -370,6 +381,8 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
   const prompt = describeStep(state, human, mode, pending);
   const showPrompt = !pending && !(state.phase.kind === 'tradeOffer' && yourMove);
   const promptCentered = yourMove && state.phase.kind !== 'main' && highlights === NO_HIGHLIGHTS;
+  // Re-measure whenever the card's text changes, since its height sets where the island starts.
+  const barInsets = useBarInsets(`${showPrompt && !promptCentered ? prompt.title + (prompt.detail ?? '') : ''}`);
 
   // ----- prompt bar buttons -----
   const buttons: PromptButton[] = [];
@@ -470,8 +483,13 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
               onPieceHover={setPieceHover}
               onProjector={(fn) => (projector.current = fn)}
             />
-            {/* Pure button decisions sit over the middle of the island; everything else docks in the header. */}
+            {/* Pure button decisions sit over the middle of the island; everything else sits just below the header. */}
             {showPrompt && promptCentered && <PromptBar prompt={prompt} buttons={buttons} floating centered />}
+            {showPrompt && !promptCentered && (
+              <div className="below-bar" style={{ top: barInsets.headerBottom }}>
+                <PromptBar prompt={prompt} buttons={buttons} floating below />
+              </div>
+            )}
             {hover && hoverText && hover.kind === 'vertex' && !hoverIsCity && <CornerTooltip state={state} vertex={hover.id} action={hoverText} x={hover.x} y={hover.y} />}
             {hover && hoverText && (hover.kind !== 'vertex' || hoverIsCity) && (
               <div className="hover-tip" style={{ left: hover.x, top: hover.y }}>
@@ -486,7 +504,6 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
             {/* Top bar: who is at the table, and the table-side controls. */}
             <header className="top-bar">
               <PlayerStrip state={state} human={human} />
-              <div className="top-bar-centre">{showPrompt && !promptCentered && <PromptBar prompt={prompt} buttons={buttons} floating docked />}</div>
               <ActionBar
                 state={state}
                 human={human}

@@ -4150,3 +4150,33 @@ body {
   max-height: none;
   font-size: 13px;
 }
+
+/* ---------- tablets: no frame on the top bar; the bottom bar keeps its border ---------- */
+@media (pointer: coarse) {
+  .top-bar {
+    background: none;
+    border: none;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    pointer-events: none;
+    padding-left: 0;
+    padding-right: 0;
+  }
+  .top-bar > * {
+    pointer-events: auto;
+  }
+  .top-bar .player-card,
+  .trading-post,
+  .top-bar .action-bar .row.bottom .btn {
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0) 55%),
+      rgba(12, 20, 28, 0.72);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+  .top-bar .action-bar .row.bottom {
+    border-left: none;
+    padding-left: 0;
+  }
+}

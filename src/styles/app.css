@@ -3386,3 +3386,40 @@ button.pick:disabled {
 .top-bar .player-card .portrait {
   border-radius: 8px 0 0 8px;
 }
+
+/* ---------- development card: click to read it ---------- */
+.dev-face-btn {
+  display: block;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: transform 0.12s ease;
+}
+.dev-face-btn:hover {
+  transform: translateY(-3px);
+}
+.dev-inspect {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+}
+.dev-inspect-art .card-face {
+  width: 168px;
+  height: 236px;
+  border-radius: 12px;
+}
+.dev-inspect-body {
+  flex: 1;
+  min-width: 0;
+}
+.dev-inspect-text {
+  font-size: 16px;
+  line-height: 1.4;
+  margin: 4px 0 10px;
+}
+.dev-inspect-rule {
+  font-size: 13px;
+  line-height: 1.4;
+}

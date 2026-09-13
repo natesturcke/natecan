@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { DevCard, GameState, PlayerId } from '@/engine/types';
 import { validateAction } from '@/engine/legal';
 import { DEV_DESCRIPTION, DEV_LABEL } from './text';
+import { Modal } from './dialogs/Modal';
 
 const ART: Record<DevCard, string> = {
   knight: 'dev-knight',
@@ -19,6 +20,7 @@ function DevFace({ card }: { card: DevCard }): React.JSX.Element {
 
 export function DevCardPanel({ state, human, onPlay }: { state: GameState; human: PlayerId; onPlay: (card: DevCard, e: React.MouseEvent<HTMLButtonElement>) => void }): React.JSX.Element | null {
   const me = state.players[human];
+  const [inspect, setInspect] = useState<number | null>(null);
   if (me.devCards.length === 0 && me.newDevCards.length === 0) return null;
 
   const playable = (card: DevCard): string | null => {
@@ -41,15 +43,20 @@ export function DevCardPanel({ state, human, onPlay }: { state: GameState; human
     ...me.newDevCards.map((card) => ({ card, isNew: true })),
   ];
 
+  const reasonFor = (card: DevCard, isNew: boolean) => (isNew ? 'Bought this turn: playable from your next turn' : playable(card));
+  const looking = inspect !== null ? cards[inspect] : null;
+
   return (
     <div className="dev-fan">
       <div className="hand-title">Development cards</div>
       <div className="dev-cards">
         {cards.map(({ card, isNew }, i) => {
-          const reason = isNew ? 'Bought this turn: playable from your next turn' : playable(card);
+          const reason = reasonFor(card, isNew);
           return (
-            <div key={i} className={`dev-card-wrap ${isNew ? 'new' : ''}`} title={`${DEV_LABEL[card]}: ${DEV_DESCRIPTION[card]}`}>
-              <DevFace card={card} />
+            <div key={i} className={`dev-card-wrap ${isNew ? 'new' : ''}`}>
+              <button type="button" className="dev-face-btn" title={`${DEV_LABEL[card]}: click to read it`} onClick={() => setInspect(i)}>
+                <DevFace card={card} />
+              </button>
               {card !== 'victoryPoint' && (
                 <button className="btn small dev-play" disabled={!!reason} title={reason ?? DEV_DESCRIPTION[card]} onClick={(e) => onPlay(card, e)}>
                   Play
@@ -60,6 +67,41 @@ export function DevCardPanel({ state, human, onPlay }: { state: GameState; human
           );
         })}
       </div>
+      {looking && (
+        <Modal title={DEV_LABEL[looking.card]} onClose={() => setInspect(null)}>
+          <div className="dev-inspect">
+            <div className="dev-inspect-art">
+              <DevFace card={looking.card} />
+            </div>
+            <div className="dev-inspect-body">
+              <p className="dev-inspect-text">{DEV_DESCRIPTION[looking.card]}</p>
+              <p className="muted dev-inspect-rule">
+                {looking.card === 'victoryPoint'
+                  ? 'Stays hidden from the other players and counts on its own. Nothing to play.'
+                  : 'You may play one development card per turn, and never on the turn you bought it. Knights can be played before you roll.'}
+              </p>
+              {reasonFor(looking.card, looking.isNew) && looking.card !== 'victoryPoint' && <p className="error">{reasonFor(looking.card, looking.isNew)}</p>}
+            </div>
+          </div>
+          <div className="modal-actions">
+            <button className="btn" onClick={() => setInspect(null)}>
+              Close
+            </button>
+            {looking.card !== 'victoryPoint' && (
+              <button
+                className="btn primary"
+                disabled={!!reasonFor(looking.card, looking.isNew)}
+                onClick={(e) => {
+                  setInspect(null);
+                  onPlay(looking.card, e);
+                }}
+              >
+                Play {DEV_LABEL[looking.card]}
+              </button>
+            )}
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

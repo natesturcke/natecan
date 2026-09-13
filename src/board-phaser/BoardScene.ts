@@ -244,6 +244,7 @@ export class BoardScene extends Phaser.Scene {
     this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
       const active = touches();
       if (active.length === 2) {
+        this.clearBoardTooltips();
         const d = Phaser.Math.Distance.Between(active[0].x, active[0].y, active[1].x, active[1].y);
         if (pinchDistance > 0 && d > 0) {
           this.zoomAt(d / pinchDistance, (active[0].x + active[1].x) / 2, (active[0].y + active[1].y) / 2);
@@ -257,6 +258,7 @@ export class BoardScene extends Phaser.Scene {
       const dx = pointer.x - this.dragStart.px;
       const dy = pointer.y - this.dragStart.py;
       if (!this.dragMoved && Math.hypot(dx, dy) < 6) return;
+      if (!this.dragMoved) this.clearBoardTooltips();
       this.dragMoved = true;
       const zoom = this.fitZoom * this.userZoom;
       this.pan = { x: this.dragStart.pan.x - dx / zoom, y: this.dragStart.pan.y - dy / zoom };
@@ -319,6 +321,21 @@ export class BoardScene extends Phaser.Scene {
         this.emitGhostPosition();
       });
     }
+  }
+
+  /** A finger that is dragging or pinching is not hovering: no tooltips until it lifts. */
+  private touchBusy(pointer: Phaser.Input.Pointer): boolean {
+    if (!pointer.wasTouch) return false;
+    const two = [this.input.pointer1, this.input.pointer2].filter((p) => p && p.isDown).length >= 2;
+    return two || this.dragMoved || (this.dragging && pointer.isDown);
+  }
+
+  /** Drops any tooltip the board is showing, e.g. when a drag or pinch begins. */
+  private clearBoardTooltips(): void {
+    this.tileHovered = null;
+    this.bridge.emit('tileHover', null);
+    if (this.pieceHovered) this.setPieceHover(null);
+    if (this.hovered) this.hover(null);
   }
 
   /** True for a plain click: the pointer did not drag the board between press and release. */
@@ -510,7 +527,9 @@ export class BoardScene extends Phaser.Scene {
       this.harborPos[hi] = { x, y };
       const hz = this.add.zone(x, y - HEX_R * 0.15, HEX_R * 0.9, HEX_R * 0.9).setDepth(DEPTH.zone - 2.6);
       hz.setInteractive(new Phaser.Geom.Circle(HEX_R * 0.45, HEX_R * 0.45, HEX_R * 0.45), Phaser.Geom.Circle.Contains);
-      hz.on('pointermove', (pointer: Phaser.Input.Pointer) => this.setPieceHover({ kind: 'harbor', id: hi }, pointer));
+      hz.on('pointermove', (pointer: Phaser.Input.Pointer) => {
+        if (!this.touchBusy(pointer)) this.setPieceHover({ kind: 'harbor', id: hi }, pointer);
+      });
       hz.on('pointerout', () => {
         if (this.pieceHovered?.kind === 'harbor' && this.pieceHovered.id === hi) this.setPieceHover(null);
       });
@@ -822,6 +841,7 @@ export class BoardScene extends Phaser.Scene {
       const local = poly.map((p) => new Phaser.Geom.Point(p.x - c.x + w / 2, p.y - c.y + hh / 2));
       zone.setInteractive(new Phaser.Geom.Polygon(local), Phaser.Geom.Polygon.Contains);
       zone.on('pointermove', (pointer: Phaser.Input.Pointer) => {
+        if (this.touchBusy(pointer)) return;
         const cam = this.cameras.main;
         this.tileHovered = h;
         this.bridge.emit('tileHover', { hex: h, x: (pointer.worldX - cam.worldView.x) * cam.zoom, y: (pointer.worldY - cam.worldView.y) * cam.zoom });
@@ -837,7 +857,7 @@ export class BoardScene extends Phaser.Scene {
       const zone = this.add.zone(p.x, p.y - HEX_R * 0.12, HEX_R * 0.42, HEX_R * 0.42).setDepth(DEPTH.zone - 2.5);
       zone.setInteractive(new Phaser.Geom.Circle(HEX_R * 0.21, HEX_R * 0.21, HEX_R * 0.21), Phaser.Geom.Circle.Contains);
       zone.on('pointermove', (pointer: Phaser.Input.Pointer) => {
-        if (!this.view?.buildings[v]) return;
+        if (!this.view?.buildings[v] || this.touchBusy(pointer)) return;
         this.setPieceHover({ kind: 'vertex', id: v }, pointer);
       });
       zone.on('pointerout', () => {
@@ -854,7 +874,7 @@ export class BoardScene extends Phaser.Scene {
       const zone = this.add.zone(eg.mid.x, eg.mid.y, len, w).setDepth(DEPTH.zone - 2.7).setRotation(eg.angle);
       zone.setInteractive(new Phaser.Geom.Rectangle(0, 0, len, w), Phaser.Geom.Rectangle.Contains);
       zone.on('pointermove', (pointer: Phaser.Input.Pointer) => {
-        if (!this.view || this.view.roads[e] === -1) return;
+        if (!this.view || this.view.roads[e] === -1 || this.touchBusy(pointer)) return;
         // A building at either end wins: it is the more interesting thing to inspect.
         if (this.pieceHovered?.kind === 'vertex') return;
         this.setPieceHover({ kind: 'edge', id: e }, pointer);

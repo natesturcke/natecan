@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { Difficulty, PlayerSetup, SetupVariant } from '@/engine/types';
 import { listGames } from '@/game/persistence';
+import { MenuBackdrop } from './MenuBackdrop';
 import { botNamesFor } from './names';
 import { Portrait } from './Portrait';
 import { humanPortraitKey, portraitKey } from './portraits';
@@ -27,6 +28,7 @@ export function MainMenu({ onStart, onResume }: { onStart: (choice: MenuChoice) 
   const reshuffle = () => setSeed(String(Math.floor(Math.random() * 1_000_000)));
   return (
     <div className="menu">
+      <MenuBackdrop />
       <div className="menu-card">
         <h1>natecan</h1>
         <p className="muted">Settle the island against three bots. The game tells you what to do at every step.</p>

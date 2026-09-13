@@ -2607,3 +2607,52 @@ button.pick:disabled {
   color: #e6dfd2;
   border-color: rgba(230, 223, 210, 0.4);
 }
+
+/* ---------- menu backdrop: drifting cards and tiles with depth ---------- */
+.menu {
+  position: relative;
+  overflow: hidden;
+}
+.menu-card {
+  position: relative;
+  z-index: 20;
+}
+.menu-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.menu-piece {
+  position: absolute;
+  transform: translate(-50%, -50%) rotate(var(--rot));
+  animation-name: menu-drift;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+  will-change: transform;
+}
+.menu-piece.card {
+  border-radius: 8px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
+}
+.menu-piece.tile {
+  filter: drop-shadow(0 18px 30px rgba(0, 0, 0, 0.55));
+}
+@keyframes menu-drift {
+  0% {
+    transform: translate(-50%, -50%) rotate(var(--rot)) translateY(0);
+  }
+  50% {
+    transform: translate(-50%, -50%) rotate(calc(var(--rot) + 4deg)) translateY(-26px) translateX(12px);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(calc(var(--rot) - 3deg)) translateY(18px) translateX(-10px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .menu-piece {
+    animation: none;
+  }
+}

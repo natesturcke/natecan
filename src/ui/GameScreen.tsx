@@ -39,6 +39,7 @@ import { PickResourcesDialog } from './dialogs/PickResourcesDialog';
 import { TradeDialog } from './dialogs/TradeDialog';
 import { TradeResolveDialog } from './dialogs/TradeResolveDialog';
 import { TradeOfferDialog } from './dialogs/TradeOfferDialog';
+import { DiscardDialog } from './dialogs/DiscardDialog';
 import { bagText } from './text';
 
 export interface GameScreenProps {
@@ -393,7 +394,7 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
   }, [hover, pending, state, hoverIsCity, highlights, human]);
 
   const prompt = describeStep(state, human, mode, pending);
-  const showPrompt = !pending && !(state.phase.kind === 'tradeOffer' && yourMove);
+  const showPrompt = !pending && !((state.phase.kind === 'tradeOffer' || state.phase.kind === 'discard') && yourMove);
   const promptCentered = yourMove && state.phase.kind !== 'main' && highlights === NO_HIGHLIGHTS;
   // Re-measure whenever the card's text changes, since its height sets where the island starts.
   const barInsets = useBarInsets(`${showPrompt && !promptCentered ? prompt.title + (prompt.detail ?? '') : ''}`);
@@ -411,17 +412,9 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
         buttons.push({ label: 'Roll the dice', onClick: () => dispatch({ player: human, type: 'ROLL_DICE' }), primary: true });
         if (legal.some((a) => a.type === 'PLAY_KNIGHT')) buttons.push({ label: 'Play Knight first', onClick: (e) => select({ player: human, type: 'PLAY_KNIGHT' }, 'You will move the robber, then roll.', anchorFromEvent(e)) });
         break;
-      case 'discard': {
-        const need = discardCount(me.resources, DISCARD_THRESHOLD);
-        const chosen = bagTotal(discardPick);
-        buttons.push({
-          label: chosen === need ? `Discard ${bagText(discardPick)}` : `Choose ${need - chosen} more`,
-          onClick: () => dispatch({ player: human, type: 'DISCARD', resources: discardPick }),
-          primary: true,
-          disabled: chosen !== need,
-        });
+      case 'discard':
+        // Handled by the DiscardDialog modal.
         break;
-      }
       case 'steal':
         for (const v of phase.victims) {
           buttons.push({ label: state.players[v].name, onClick: () => setStealPick(v), primary: stealPick === v });
@@ -536,7 +529,7 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
             <footer className="bottom-bar">
               <section className="bar-hand">
                 <div className="section-title">Your hand</div>
-                <PlayerHand resources={me.resources} selectable={phase.kind === 'discard' && yourMove} selected={discardPick} onToggle={toggleDiscard} />
+                <PlayerHand resources={me.resources} />
               </section>
               <section className="bar-dev">
                 <DevCardPanel state={state} human={human} onPlay={onPlayDev} />
@@ -606,6 +599,11 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
           onConfirm={([resource]) => dispatch({ player: human, type: 'PLAY_MONOPOLY', resource })}
         />
       )}
+      </Presence>
+      <Presence show={phase.kind === 'discard' && yourMove}>
+        {phase.kind === 'discard' && yourMove && (
+          <DiscardDialog state={state} human={human} pick={discardPick} onToggle={toggleDiscard} onConfirm={() => dispatch({ player: human, type: 'DISCARD', resources: discardPick })} />
+        )}
       </Presence>
       <Presence show={phase.kind === 'tradeOffer' && yourMove}>
         {phase.kind === 'tradeOffer' && yourMove && (

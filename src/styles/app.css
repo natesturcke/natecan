@@ -3185,3 +3185,20 @@ button.pick:disabled {
   padding: 6px 12px;
   text-align: center;
 }
+
+/* ---------- discard dialog ---------- */
+.discard-intro {
+  margin: 0 0 8px;
+  font-size: 13px;
+}
+.discard-tally {
+  min-height: 110px;
+  padding: 10px;
+  border-radius: 10px;
+  background: var(--panel-2);
+}
+.modal-actions .discard-count {
+  margin-right: auto;
+  align-self: center;
+  font-size: 13px;
+}

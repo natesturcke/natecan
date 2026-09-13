@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Action } from '@/engine/actions';
 import { bag, bagTotal } from '@/engine/bag';
-import { DISCARD_THRESHOLD } from '@/engine/constants';
+import { COSTS, DISCARD_THRESHOLD } from '@/engine/constants';
 import { legalActions } from '@/engine/legal';
 import { legalCityVertices, legalRoadEdges, legalSettlementVertices } from '@/engine/rules/placement';
 import { discardCount } from '@/engine/rules/trade';
@@ -176,7 +176,7 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
   const [diceRoll, setDiceRoll] = useState<DiceRoll | null>(null);
   const [tileHover, setTileHover] = useState<TileHover | null>(null);
   const [pieceHover, setPieceHover] = useState<PieceHover | null>(null);
-  const projector = useRef<((hex: number) => { x: number; y: number } | null) | null>(null);
+  const projector = useRef<((kind: 'hex' | 'vertex' | 'edge', id: number) => { x: number; y: number } | null) | null>(null);
   const [flights, setFlights] = useState<Flight[]>([]);
   const [produce, setProduce] = useState<{ id: number; hexes: number[] } | null>(null);
   const clearFlights = useCallback(() => {
@@ -328,7 +328,7 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
         for (const h of producing) {
           const resource = TERRAIN_RESOURCE[state.board.hexes[h].terrain];
           if (!resource) continue;
-          const at = project(h);
+          const at = project('hex', h);
           if (!at) continue;
           for (const v of TOPOLOGY.hexVertices[h]) {
             const b = state.buildings[v];
@@ -399,6 +399,18 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
           for (let i = 0; i < ev.gave[r]; i++) (ev.to === human ? flyToMe : fly)(r, spot(ev.from, r), spot(ev.to, r), 'gave');
           for (let i = 0; i < ev.got[r]; i++) (ev.from === human ? flyToMe : fly)(r, spot(ev.to, r), spot(ev.from, r), 'got');
         }
+      } else if (ev.type === 'built' && ev.player === human && !ev.free) {
+        // The cost leaves your hand and lands on the piece you just built.
+        const spot = ev.kind === 'road' && ev.edge !== undefined ? projector.current?.('edge', ev.edge) : ev.vertex !== undefined ? projector.current?.('vertex', ev.vertex) : null;
+        const cost = COSTS[ev.kind];
+        for (const r of RESOURCES) for (let i = 0; i < cost[r]; i++) fly(r, centre(`[data-hand-card="${r}"]`), spot ?? null, 'spent');
+      } else if (ev.type === 'devBought' && ev.player === human) {
+        const pile = centre('.bar-dev') ?? centre('[data-build="devCard"]');
+        for (const r of RESOURCES) for (let i = 0; i < COSTS.devCard[r]; i++) fly(r, centre(`[data-hand-card="${r}"]`), pile, 'spent');
+      } else if (ev.type === 'maritimeTrade' && ev.player === human) {
+        const post = centre('.trading-post');
+        for (let i = 0; i < ev.amount; i++) fly(ev.gave, centre(`[data-hand-card="${ev.gave}"]`), post, 'spent');
+        flyToMe(ev.got, post, centre(`[data-hand-card="${ev.got}"]`), 'bought');
       } else if (ev.type === 'discarded') {
         const board = document.querySelector('.board-area')?.getBoundingClientRect();
         const bar = document.querySelector('.bottom-bar')?.getBoundingClientRect();

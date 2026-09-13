@@ -68,7 +68,7 @@ export function BuildPanel(p: BuildPanelProps): React.JSX.Element {
       {build('settlement', 'Settlement')}
       {build('city', 'City')}
       <span className="build-wrap">
-        <button className="btn build" disabled={!!reason.devCard} onClick={p.onBuyDev}>
+        <button className="btn build" data-build="devCard" disabled={!!reason.devCard} onClick={p.onBuyDev}>
           <span className="build-label">
             Development card <span className="muted">({state.devDeck.length} left)</span>
           </span>

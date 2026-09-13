@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { useEffect, useRef, useState } from 'react';
 import { allAssetPaths } from './assets';
 import { BoardBridge } from './BoardBridge';
-import { HEX_PX } from './geometry';
+import { EDGE_PX, HEX_PX, VERTEX_PX } from './geometry';
 import { BoardScene, SCENE_KEY } from './BoardScene';
 import type { BoardView, Ghost, Highlights, Insets } from './view';
 
@@ -24,8 +24,8 @@ export interface PhaserBoardProps {
   /** Cursor over any tile, in viewport coordinates. */
   onTileHover?: (hover: { hex: number; x: number; y: number } | null) => void;
   onPieceHover?: (hover: { kind: 'vertex' | 'edge' | 'harbor'; id: number; x: number; y: number } | null) => void;
-  /** Receives a function mapping a hex id to viewport coordinates once the board is ready. */
-  onProjector?: (project: (hex: number) => { x: number; y: number } | null) => void;
+  /** Receives a function mapping a hex, corner or edge to viewport coordinates once the board is ready. */
+  onProjector?: (project: (kind: 'hex' | 'vertex' | 'edge', id: number) => { x: number; y: number } | null) => void;
 }
 
 let availableAssetsPromise: Promise<{ key: string; path: string }[]> | null = null;
@@ -83,11 +83,12 @@ export function PhaserBoard(props: PhaserBoardProps): React.JSX.Element {
     const offs = [
       bridge.onReact('ready', () => {
         setReady(true);
-        callbacks.current.onProjector?.((hex) => {
+        callbacks.current.onProjector?.((kind, id) => {
           if (!game || !bridge.project) return null;
           const rect = game.canvas.getBoundingClientRect();
           const scale = rect.width / game.scale.width;
-          const p = bridge.project(HEX_PX[hex].x, HEX_PX[hex].y);
+          const world = kind === 'hex' ? HEX_PX[id] : kind === 'vertex' ? VERTEX_PX[id] : EDGE_PX[id].mid;
+          const p = bridge.project(world.x, world.y);
           return { x: rect.left + p.x * scale, y: rect.top + p.y * scale };
         });
       }),

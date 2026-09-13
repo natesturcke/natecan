@@ -66,11 +66,11 @@ export function TradeOfferDialog({ state, human, onAccept, onDecline }: { state:
           <Cards bag={offer.want} />
         </div>
       </div>
-      {!canAccept && <p className="error">You do not have the cards to accept this.</p>}
       <div className="modal-actions">
         <button className="btn ghost" onClick={() => setPeeking(true)} title="Hide the offer for a moment to look at your hand and the board">
           Look at my hand
         </button>
+        {!canAccept && <span className="error offer-cannot">You do not have the cards to accept this.</span>}
         <button className="btn" onClick={onDecline}>
           Decline
         </button>

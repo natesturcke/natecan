@@ -3723,3 +3723,10 @@ button.pick:disabled {
   min-width: 32px;
   text-align: right;
 }
+
+/* ---------- trade offer: the reason you cannot accept sits beside the buttons ---------- */
+.modal-actions .offer-cannot {
+  align-self: center;
+  font-size: 13px;
+  margin-right: 4px;
+}

@@ -109,6 +109,7 @@ export class BoardScene extends Phaser.Scene {
     this.hoverGfx = this.add.graphics().setDepth(DEPTH.highlight + 1);
     this.createZones();
     this.createInfoZones();
+    this.createCameraControls();
 
     this.unsubscribe.push(this.bridge.onScene('view', (v) => this.setView(v)));
     this.unsubscribe.push(this.bridge.onScene('highlights', (h) => this.setHighlights(h)));
@@ -141,12 +142,151 @@ export class BoardScene extends Phaser.Scene {
     const freeW = Math.max(200, this.scale.width - this.insets.left - this.insets.right);
     const freeH = Math.max(200, this.scale.height - this.insets.top - this.insets.bottom);
     const zoom = Math.min(freeW / width, freeH / height);
-    const cam = this.cameras.main;
-    cam.setZoom(zoom);
     // Centre of the free area in canvas pixels, relative to the canvas centre.
     const freeCx = this.insets.left + freeW / 2 - this.scale.width / 2;
     const freeCy = this.insets.top + freeH / 2 - this.scale.height / 2;
-    cam.centerOn((b.minX + b.maxX) / 2 - freeCx / zoom, (b.minY + b.maxY) / 2 - freeCy / zoom);
+    this.fitZoom = zoom;
+    this.fitCentre = { x: (b.minX + b.maxX) / 2 - freeCx / zoom, y: (b.minY + b.maxY) / 2 - freeCy / zoom };
+    this.applyCamera();
+  }
+
+  // ---------- user zoom and pan, layered on top of the automatic fit ----------
+
+  private fitZoom = 1;
+  private fitCentre: Point = { x: 0, y: 0 };
+  /** Multiplier on the fitted zoom: 1 = the island exactly fills the free area. */
+  private userZoom = 1;
+  /** Pan offset in world units, added to the fitted centre. */
+  private pan: Point = { x: 0, y: 0 };
+  private dragging = false;
+  private dragMoved = false;
+  private dragStart: { px: number; py: number; pan: Point } | null = null;
+
+  private static readonly MIN_ZOOM = 0.7;
+  private static readonly MAX_ZOOM = 3.5;
+
+  private applyCamera(): void {
+    const cam = this.cameras.main;
+    const zoom = this.fitZoom * this.userZoom;
+    // Keep the island from being panned entirely out of view.
+    const b = boardBounds();
+    const halfW = (b.maxX - b.minX) * 0.4;
+    const halfH = (b.maxY - b.minY) * 0.4;
+    this.pan.x = Phaser.Math.Clamp(this.pan.x, -halfW, halfW);
+    this.pan.y = Phaser.Math.Clamp(this.pan.y, -halfH, halfH);
+    cam.setZoom(zoom);
+    cam.centerOn(this.fitCentre.x + this.pan.x, this.fitCentre.y + this.pan.y);
+  }
+
+  /** Zooms by a factor while keeping the world point under the given canvas pixel fixed. */
+  private zoomAt(factor: number, canvasX: number, canvasY: number): void {
+    const cam = this.cameras.main;
+    const before = cam.getWorldPoint(canvasX, canvasY);
+    this.userZoom = Phaser.Math.Clamp(this.userZoom * factor, BoardScene.MIN_ZOOM, BoardScene.MAX_ZOOM);
+    this.applyCamera();
+    const after = cam.getWorldPoint(canvasX, canvasY);
+    this.pan.x += before.x - after.x;
+    this.pan.y += before.y - after.y;
+    this.applyCamera();
+    this.emitGhostPosition();
+  }
+
+  private resetView(): void {
+    this.userZoom = 1;
+    this.pan = { x: 0, y: 0 };
+    this.applyCamera();
+    this.emitGhostPosition();
+  }
+
+  /** Wheel or pinch to zoom, drag to pan, arrows and +/- on the keyboard, double-click or 0 to reset. */
+  private createCameraControls(): void {
+    this.input.on('wheel', (pointer: Phaser.Input.Pointer, _objs: unknown, _dx: number, dy: number) => {
+      if (!this.fromCanvas(pointer)) return;
+      const factor = Math.exp(-dy * 0.0015);
+      // Anchor on the wheel event's own position: the pointer's tracked position can lag behind.
+      const ev = pointer.event as WheelEvent;
+      const rect = this.game.canvas.getBoundingClientRect();
+      const scale = this.scale.width / rect.width;
+      this.zoomAt(factor, (ev.clientX - rect.left) * scale, (ev.clientY - rect.top) * scale);
+    });
+    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      if (!this.fromCanvas(pointer)) return;
+      this.dragging = true;
+      this.dragMoved = false;
+      this.dragStart = { px: pointer.x, py: pointer.y, pan: { ...this.pan } };
+    });
+    this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
+      if (!this.dragging || !this.dragStart || !pointer.isDown) return;
+      const dx = pointer.x - this.dragStart.px;
+      const dy = pointer.y - this.dragStart.py;
+      if (!this.dragMoved && Math.hypot(dx, dy) < 6) return;
+      this.dragMoved = true;
+      const zoom = this.fitZoom * this.userZoom;
+      this.pan = { x: this.dragStart.pan.x - dx / zoom, y: this.dragStart.pan.y - dy / zoom };
+      this.applyCamera();
+      this.emitGhostPosition();
+      this.input.setDefaultCursor('grabbing');
+    });
+    const endDrag = () => {
+      if (this.dragMoved) this.input.setDefaultCursor(this.hovered ? 'pointer' : 'default');
+      this.dragging = false;
+      this.dragStart = null;
+    };
+    this.input.on('pointerup', endDrag);
+    this.input.on('pointerupoutside', endDrag);
+    this.input.on('gameout', endDrag);
+    // Double-click on the water resets the view.
+    let lastTap = 0;
+    this.input.on('pointerup', (pointer: Phaser.Input.Pointer) => {
+      if (this.dragMoved || !this.fromCanvas(pointer)) return;
+      const now = pointer.upTime;
+      if (now - lastTap < 350) this.resetView();
+      lastTap = now;
+    });
+    const kb = this.input.keyboard;
+    if (kb) {
+      kb.on('keydown', (ev: KeyboardEvent) => {
+        // Never steal keys from a text field or dialog.
+        const target = ev.target as HTMLElement | null;
+        if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT')) return;
+        const step = 40 / (this.fitZoom * this.userZoom);
+        switch (ev.key) {
+          case 'ArrowLeft':
+            this.pan.x -= step;
+            break;
+          case 'ArrowRight':
+            this.pan.x += step;
+            break;
+          case 'ArrowUp':
+            this.pan.y -= step;
+            break;
+          case 'ArrowDown':
+            this.pan.y += step;
+            break;
+          case '+':
+          case '=':
+            this.zoomAt(1.2, this.scale.width / 2, this.scale.height / 2);
+            return;
+          case '-':
+          case '_':
+            this.zoomAt(1 / 1.2, this.scale.width / 2, this.scale.height / 2);
+            return;
+          case '0':
+            this.resetView();
+            return;
+          default:
+            return;
+        }
+        ev.preventDefault();
+        this.applyCamera();
+        this.emitGhostPosition();
+      });
+    }
+  }
+
+  /** True for a plain click: the pointer did not drag the board between press and release. */
+  private isClick(pointer: Phaser.Input.Pointer): boolean {
+    return this.fromCanvas(pointer) && !this.dragMoved;
   }
 
   override update(time: number, delta: number): void {
@@ -489,7 +629,7 @@ export class BoardScene extends Phaser.Scene {
       const zone = this.add.zone(p.x, p.y, HEX_R * 0.36, HEX_R * 0.36).setDepth(DEPTH.zone);
       zone.setInteractive(new Phaser.Geom.Circle(HEX_R * 0.18, HEX_R * 0.18, HEX_R * 0.18), Phaser.Geom.Circle.Contains);
       zone.disableInteractive();
-      zone.on('pointerdown', (pointer: Phaser.Input.Pointer) => this.fromCanvas(pointer) && this.bridge.emit('vertexClick', v));
+      zone.on('pointerup', (pointer: Phaser.Input.Pointer) => this.isClick(pointer) && this.bridge.emit('vertexClick', v));
       zone.on('pointerover', () => this.hover({ kind: 'vertex', id: v }));
       zone.on('pointerout', () => this.hover(null));
       this.vertexZones.push(zone);
@@ -502,7 +642,7 @@ export class BoardScene extends Phaser.Scene {
       const zone = this.add.zone(eg.mid.x, eg.mid.y, len, w).setDepth(DEPTH.zone - 1).setRotation(eg.angle);
       zone.setInteractive(new Phaser.Geom.Rectangle(0, 0, len, w), Phaser.Geom.Rectangle.Contains);
       zone.disableInteractive();
-      zone.on('pointerdown', (pointer: Phaser.Input.Pointer) => this.fromCanvas(pointer) && this.bridge.emit('edgeClick', e));
+      zone.on('pointerup', (pointer: Phaser.Input.Pointer) => this.isClick(pointer) && this.bridge.emit('edgeClick', e));
       zone.on('pointerover', () => this.hover({ kind: 'edge', id: e }));
       zone.on('pointerout', () => this.hover(null));
       this.edgeZones.push(zone);
@@ -516,7 +656,7 @@ export class BoardScene extends Phaser.Scene {
       const local = poly.map((p) => new Phaser.Geom.Point(p.x - c.x + w / 2, p.y - c.y + hh / 2));
       zone.setInteractive(new Phaser.Geom.Polygon(local), Phaser.Geom.Polygon.Contains);
       zone.disableInteractive();
-      zone.on('pointerdown', (pointer: Phaser.Input.Pointer) => this.fromCanvas(pointer) && this.bridge.emit('hexClick', h));
+      zone.on('pointerup', (pointer: Phaser.Input.Pointer) => this.isClick(pointer) && this.bridge.emit('hexClick', h));
       zone.on('pointerover', () => this.hover({ kind: 'hex', id: h }));
       zone.on('pointerout', () => this.hover(null));
       this.hexZones.push(zone);

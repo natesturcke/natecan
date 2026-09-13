@@ -66,7 +66,7 @@ export function describeStep(state: GameState, human: PlayerId, mode: Mode, pend
       if (phase.step === 'settlement') {
         return {
           title: `Place your ${round} settlement.`,
-          detail: 'Click a highlighted corner. Corners next to the numbers 6 and 8 produce most often.',
+          detail: 'Click a highlighted corner. Corners next to the numbers 6 and 8 produce most often. Scroll to zoom, drag to pan, double-click the water to reset.',
           yourMove: true,
         };
       }

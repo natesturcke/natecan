@@ -16,13 +16,13 @@ export interface StepPrompt {
   yourMove: boolean;
 }
 
-/** "Round 2, turn 3 of 4." Turns are numbered from the first roll after setup. */
+/** "Turn 2, player 3 of 4." A turn is one full round: every player goes once. */
 export function turnOfRound(state: GameState): string {
   const n = state.players.length;
   const t = state.turn.number;
   const round = Math.floor((t - 1) / n) + 1;
   const pos = ((t - 1) % n) + 1;
-  return `Round ${round}, turn ${pos} of ${n}.`;
+  return `Turn ${round}, player ${pos} of ${n}.`;
 }
 
 /**

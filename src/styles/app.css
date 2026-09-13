@@ -2503,3 +2503,26 @@ button.pick:disabled {
 .top-bar .action-bar .row.bottom {
   padding-left: 12px;
 }
+
+/* ---------- trading post: hut in the middle, a trade button either side ---------- */
+.trading-post {
+  gap: 10px;
+  padding: 2px 8px;
+}
+.trading-post-centre {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  min-width: 96px;
+}
+.trading-post-art {
+  width: 96px;
+  height: 52px;
+  margin-bottom: -2px;
+}
+.trading-post .btn.small {
+  white-space: nowrap;
+  font-size: 12px;
+  padding: 5px 10px;
+}

@@ -106,8 +106,40 @@ function ghostFor(pending: Pending | null, human: PlayerId): Ghost {
   }
 }
 
-/** Screen space used by the top bar plus instruction card, and the bottom bar. */
+/** Fallback screen space for the bars until they have been measured. */
 const BOARD_INSETS = { left: 16, right: 16, top: 100, bottom: 214 };
+
+/** Measures the top and bottom bars so the island always fits the space between them. */
+function useBarInsets(): { left: number; right: number; top: number; bottom: number } {
+  const [insets, setInsets] = useState(BOARD_INSETS);
+  useEffect(() => {
+    const measure = () => {
+      const area = document.querySelector('.board-area')?.getBoundingClientRect();
+      const top = document.querySelector('.top-bar')?.getBoundingClientRect();
+      const bottom = document.querySelector('.bottom-bar')?.getBoundingClientRect();
+      if (!area) return;
+      const next = {
+        left: 16,
+        right: 16,
+        top: top ? Math.round(top.bottom - area.top + 12) : BOARD_INSETS.top,
+        bottom: bottom ? Math.round(area.bottom - bottom.top + 12) : BOARD_INSETS.bottom,
+      };
+      setInsets((cur) => (cur.top === next.top && cur.bottom === next.bottom ? cur : next));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    for (const sel of ['.top-bar', '.bottom-bar', '.board-area']) {
+      const el = document.querySelector(sel);
+      if (el) ro.observe(el);
+    }
+    window.addEventListener('resize', measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', measure);
+    };
+  }, []);
+  return insets;
+}
 
 const AUTO_ADVANCE: ReadonlySet<Action['type']> = new Set(['SETUP_PLACE_ROAD', 'STEAL']);
 
@@ -128,6 +160,7 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
   const [flights, setFlights] = useState<Flight[]>([]);
   const clearFlights = useCallback(() => setFlights([]), []);
 
+  const barInsets = useBarInsets();
   const yourMove = state.phase.kind !== 'ended' && currentActor(state) === human;
   const legal = useMemo(() => (yourMove ? legalActions(state, human) : []), [state, human, yourMove]);
   const me = state.players[human];
@@ -427,7 +460,7 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
               view={view}
               highlights={highlights}
               ghost={ghost}
-              insets={BOARD_INSETS}
+              insets={barInsets}
               onVertexClick={onVertexClick}
               onEdgeClick={onEdgeClick}
               onHexClick={onHexClick}

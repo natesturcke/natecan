@@ -81,6 +81,20 @@ export class GameController {
     void this.scheduleBots();
   }
 
+  /**
+   * Re-applies a recorded action list (human and bot moves alike) without scheduling bots or
+   * notifying per step, so a saved game can be restored to exactly where it was left.
+   */
+  replay(actions: readonly Action[]): void {
+    for (const action of actions) {
+      const result = applyAction(this._state, action);
+      this._state = result.state;
+      this._lastEvents = result.events;
+      this._history.push({ action, events: result.events });
+    }
+    this.notify();
+  }
+
   /** Starts bot play if a bot is the current actor. Safe to call repeatedly. */
   async scheduleBots(): Promise<void> {
     if (this.inFlight || this.disposed) return;

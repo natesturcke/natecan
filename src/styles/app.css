@@ -2246,3 +2246,106 @@ button.pick:disabled {
     height: 45px;
   }
 }
+
+/* ---------- header: two rows unless the screen is wide enough for one ---------- */
+.top-bar {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-areas:
+    'players . controls'
+    'message message message';
+  row-gap: 6px;
+  height: auto;
+  min-height: 76px;
+  align-items: center;
+}
+.top-bar .player-strip {
+  grid-area: players;
+}
+.top-bar .action-bar {
+  grid-area: controls;
+  justify-self: end;
+}
+.top-bar-centre {
+  grid-area: message;
+}
+.top-bar-centre:empty {
+  display: none;
+}
+.instruction-card.docked {
+  max-width: none;
+}
+@media (min-width: 1700px) {
+  .top-bar {
+    grid-template-columns: auto minmax(280px, 1fr) auto;
+    grid-template-areas: 'players message controls';
+  }
+  .instruction-card.docked {
+    max-width: 760px;
+  }
+}
+.top-bar,
+.bottom-bar {
+  width: min(100% - 24px, 1600px);
+}
+
+/* ---------- header, final: always two rows so nothing ever squeezes ---------- */
+.top-bar {
+  display: grid;
+  grid-template-columns: max-content 1fr max-content;
+  grid-template-areas:
+    'players . controls'
+    'message message message';
+  row-gap: 6px;
+  column-gap: 12px;
+}
+@media (min-width: 1700px) {
+  .top-bar {
+    grid-template-columns: max-content 1fr max-content;
+    grid-template-areas:
+      'players . controls'
+      'message message message';
+  }
+  .instruction-card.docked {
+    max-width: none;
+  }
+}
+.instruction-card.docked {
+  padding: 5px 12px;
+}
+.instruction-card.docked .prompt-text {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.instruction-card.docked .prompt-title {
+  font-size: 15px;
+  white-space: nowrap;
+}
+.instruction-card.docked .prompt-detail {
+  margin-top: 0;
+  font-size: 11.5px;
+}
+
+/* ---------- menu: continue a saved game ---------- */
+.resume-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 10px 0 4px;
+}
+.resume-list .section-title {
+  margin: 0;
+}
+.btn.resume {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  text-align: left;
+  padding: 8px 12px;
+}
+.btn.resume .muted {
+  font-size: 12px;
+  white-space: nowrap;
+}

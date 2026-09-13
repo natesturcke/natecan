@@ -352,7 +352,7 @@ export class BoardScene extends Phaser.Scene {
     const target = t.y;
     t.y = target - HEX_R * 6;
     t.setAlpha?.(0);
-    this.tweens.add({ targets: obj, alpha: 1, delay, duration: 120, ease: 'Linear' });
+    this.tweens.add({ targets: obj, alpha: 1, delay, duration: 360, ease: 'Linear' });
     this.tweens.add({ targets: obj, y: target, delay, duration: 420, ease: 'Quad.easeIn' });
   }
 

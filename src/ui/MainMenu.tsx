@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { Difficulty, PlayerSetup, SetupVariant } from '@/engine/types';
+import { listGames } from '@/game/persistence';
 import { botNamesFor } from './names';
 import { Portrait } from './Portrait';
 import { humanPortraitKey, portraitKey } from './portraits';
@@ -14,8 +15,9 @@ const BOT_COLORS = ['#3b6fd6', '#e8862e', '#f2efe4'];
 const BOT_KEYS = ['blue', 'orange', 'white'] as const;
 const HUMAN_COLOR = '#d33b2f';
 
-export function MainMenu({ onStart }: { onStart: (choice: MenuChoice) => void }): React.JSX.Element {
+export function MainMenu({ onStart, onResume }: { onStart: (choice: MenuChoice) => void; onResume?: (id: string) => void }): React.JSX.Element {
   const [name, setName] = useState('You');
+  const saved = useMemo(() => listGames().slice(0, 3), []);
   const [difficulties, setDifficulties] = useState<Difficulty[]>(['medium', 'medium', 'medium']);
   const [seed, setSeed] = useState(() => String(Math.floor(Math.random() * 1_000_000)));
   const [variant, setVariant] = useState<SetupVariant>('spiral');
@@ -28,6 +30,22 @@ export function MainMenu({ onStart }: { onStart: (choice: MenuChoice) => void })
       <div className="menu-card">
         <h1>natecan</h1>
         <p className="muted">Settle the island against three bots. The game tells you what to do at every step.</p>
+
+        {saved.length > 0 && onResume && (
+          <div className="resume-list">
+            <div className="section-title">Continue a game</div>
+            {saved.map((g) => (
+              <button key={g.id} className="btn resume" onClick={() => onResume(g.id)} title={`Game ${g.id}: reopen at ${new Date(g.savedAt).toLocaleString()}`}>
+                <span>
+                  {g.choice.players[0].name} vs {g.choice.players.slice(1).map((p) => p.name).join(', ')}
+                </span>
+                <span className="muted">
+                  {g.actions.length} moves · {new Date(g.savedAt).toLocaleDateString()}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* The table: your card and the three you are up against. */}
         <div className="menu-table">

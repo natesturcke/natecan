@@ -107,7 +107,7 @@ function ghostFor(pending: Pending | null, human: PlayerId): Ghost {
 }
 
 /** Screen space used by the top bar plus instruction card, and the bottom bar. */
-const BOARD_INSETS = { left: 16, right: 16, top: 150, bottom: 214 };
+const BOARD_INSETS = { left: 16, right: 16, top: 100, bottom: 214 };
 
 const AUTO_ADVANCE: ReadonlySet<Action['type']> = new Set(['SETUP_PLACE_ROAD', 'STEAL']);
 
@@ -335,6 +335,8 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
   }, [hover, pending, state, hoverIsCity, highlights, human]);
 
   const prompt = describeStep(state, human, mode, pending);
+  const showPrompt = !pending && !(state.phase.kind === 'tradeOffer' && yourMove);
+  const promptCentered = yourMove && state.phase.kind !== 'main' && highlights === NO_HIGHLIGHTS;
 
   // ----- prompt bar buttons -----
   const buttons: PromptButton[] = [];
@@ -435,9 +437,8 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
               onPieceHover={setPieceHover}
               onProjector={(fn) => (projector.current = fn)}
             />
-            {!pending && !(phase.kind === 'tradeOffer' && yourMove) && (
-              <PromptBar prompt={prompt} buttons={buttons} floating centered={yourMove && buttons.length > 0 && highlights === NO_HIGHLIGHTS} />
-            )}
+            {/* Pure button decisions sit over the middle of the island; everything else docks in the header. */}
+            {showPrompt && promptCentered && <PromptBar prompt={prompt} buttons={buttons} floating centered />}
             {hover && hoverText && hover.kind === 'vertex' && !hoverIsCity && <CornerTooltip state={state} vertex={hover.id} action={hoverText} x={hover.x} y={hover.y} />}
             {hover && hoverText && (hover.kind !== 'vertex' || hoverIsCity) && (
               <div className="hover-tip" style={{ left: hover.x, top: hover.y }}>
@@ -452,6 +453,7 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
             {/* Top bar: who is at the table, and the table-side controls. */}
             <header className="top-bar">
               <PlayerStrip state={state} human={human} />
+              <div className="top-bar-centre">{showPrompt && !promptCentered && <PromptBar prompt={prompt} buttons={buttons} floating docked />}</div>
               <ActionBar
                 state={state}
                 human={human}

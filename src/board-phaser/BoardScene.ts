@@ -346,6 +346,16 @@ export class BoardScene extends Phaser.Scene {
     }
   }
 
+  /** Lets a freshly created object fall from the sky onto its spot, landing with a small bounce. */
+  private dropIn(obj: Phaser.GameObjects.GameObject, delay: number): void {
+    const t = obj as unknown as { y: number; alpha: number; setAlpha?: (a: number) => void };
+    const target = t.y;
+    t.y = target - HEX_R * 7;
+    t.setAlpha?.(0);
+    this.tweens.add({ targets: obj, alpha: 1, delay, duration: 160, ease: 'Linear' });
+    this.tweens.add({ targets: obj, y: target, delay, duration: 720, ease: 'Bounce.easeOut' });
+  }
+
   private buildStatic(view: BoardView): void {
     this.tiles.forEach((t) => t.destroy());
     this.tokens.forEach((t) => t.destroy());
@@ -354,8 +364,14 @@ export class BoardScene extends Phaser.Scene {
     this.tokens = [];
     this.harborObjs = [];
 
-    const order = [...Array(HEX_COUNT).keys()].sort((a, b) => HEX_PX[a].y - HEX_PX[b].y);
+    // First time the island appears, the tiles rain down one after another, north to south.
+    const intro = !this.lastView;
+    const stagger = 75;
+    let dropIndex = 0;
+    const order = [...Array(HEX_COUNT).keys()].sort((a, b) => HEX_PX[a].y - HEX_PX[b].y || HEX_PX[a].x - HEX_PX[b].x);
     for (const h of order) {
+      const dropDelay = dropIndex * stagger;
+      dropIndex++;
       const tile = view.hexes[h];
       const c = HEX_PX[h];
       const key = this.pickTileKey(tile.terrain, h);
@@ -374,6 +390,7 @@ export class BoardScene extends Phaser.Scene {
       } else {
         this.tiles.push(this.drawFallbackTile(h, tile.terrain, depth));
       }
+      if (intro) this.dropIn(this.tiles[this.tiles.length - 1], dropDelay);
       if (tile.token !== null) {
         const tk = tokenKey(tile.token);
         const ty = c.y - HEX_R * CAMERA_K * 0.05;
@@ -387,8 +404,12 @@ export class BoardScene extends Phaser.Scene {
         } else {
           this.tokens.push(this.drawFallbackToken(c.x, ty, tile.token, DEPTH.token + c.y * 0.001));
         }
+        // The number token lands a beat after its tile.
+        if (intro) this.dropIn(this.tokens[this.tokens.length - 1], dropDelay + 140);
       }
     }
+    const harborDelay = dropIndex * stagger + 150;
+    let harborIndex = 0;
 
     for (const harbor of view.harbors) {
       const eg = EDGE_PX[harbor.edge];
@@ -406,6 +427,8 @@ export class BoardScene extends Phaser.Scene {
       } else {
         this.harborObjs.push(this.drawFallbackHarbor(x, y, harbor.kind, depth));
       }
+      if (intro) this.dropIn(this.harborObjs[this.harborObjs.length - 1], harborDelay + harborIndex * 90);
+      harborIndex++;
       // Faint dashed lines to the two harbor vertices help players see which corners count.
       const g = this.add.graphics().setDepth(depth - 0.0005);
       g.lineStyle(2, 0xffffff, 0.35);

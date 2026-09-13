@@ -1944,8 +1944,10 @@ button.pick:disabled {
 .top-bar,
 .bottom-bar {
   position: absolute;
-  left: 12px;
-  right: 12px;
+  /* Centred, and never wider than a comfortable reading width on big monitors. */
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(100% - 24px, 1480px);
   z-index: 18;
   display: flex;
   align-items: stretch;
@@ -2099,5 +2101,148 @@ button.pick:disabled {
   }
   .bar-log {
     min-height: 120px;
+  }
+}
+
+/* ---------- header rework: players | message | controls ---------- */
+.top-bar {
+  display: grid;
+  grid-template-columns: auto minmax(240px, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  height: 76px;
+  padding: 6px 12px;
+}
+.top-bar .player-strip {
+  flex: none;
+  gap: 6px;
+}
+.top-bar .player-card {
+  flex: none;
+  width: auto;
+  min-width: 0;
+  padding: 4px 10px 4px 6px;
+  gap: 8px;
+  border-width: 2px;
+  opacity: 0.75;
+  transition: opacity 0.15s ease, box-shadow 0.15s ease;
+}
+.top-bar .player-card.turn,
+.top-bar .player-card.actor {
+  opacity: 1;
+}
+.top-bar .player-card .portrait {
+  width: 40px;
+  height: 56px;
+}
+.top-bar .player-head {
+  gap: 6px;
+}
+.top-bar .player-head .swatch {
+  display: none;
+}
+.top-bar .player-name {
+  font-size: 13px;
+  white-space: nowrap;
+}
+.top-bar .vp {
+  margin-left: 6px;
+  font-size: 12px;
+  padding: 0 7px;
+}
+.top-bar .player-stats {
+  margin-top: 2px;
+  gap: 6px;
+  font-size: 10.5px;
+  white-space: nowrap;
+  flex-wrap: nowrap;
+}
+.top-bar .player-stats span::after {
+  margin-left: 6px;
+}
+.top-bar .player-badges {
+  display: flex;
+  gap: 4px;
+  margin-top: 2px;
+}
+.top-bar .player-badges:empty {
+  display: none;
+}
+.top-bar .player-badges .badge {
+  font-size: 9.5px;
+  padding: 0 5px;
+}
+
+/* The message docked in the middle of the header. */
+.top-bar-centre {
+  min-width: 0;
+  display: flex;
+  justify-content: center;
+}
+.instruction-card.docked {
+  position: static;
+  transform: none;
+  animation: none;
+  width: 100%;
+  max-width: 720px;
+  min-width: 0;
+  padding: 6px 14px;
+  gap: 12px;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: rgba(60, 50, 38, 0.45);
+}
+.instruction-card.docked.yours {
+  background: rgba(96, 72, 34, 0.5);
+}
+.instruction-card.docked .prompt-title {
+  font-size: 16px;
+  line-height: 1.15;
+}
+.instruction-card.docked .prompt-detail {
+  font-size: 11.5px;
+  line-height: 1.25;
+}
+.instruction-card.docked .prompt-buttons .btn {
+  font-size: 13px;
+  padding: 6px 12px;
+}
+
+/* Controls grouped on the right: trade pair, then the rest. */
+.top-bar .action-bar {
+  flex: none;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+.top-bar .action-bar .row {
+  gap: 6px;
+  flex-wrap: nowrap;
+}
+.top-bar .action-bar .row.bottom {
+  margin: 0;
+  padding-left: 10px;
+  border-left: 1px solid rgba(255, 236, 200, 0.2);
+}
+.top-bar .action-bar .btn {
+  font-size: 12.5px;
+  padding: 6px 10px;
+  white-space: nowrap;
+}
+.top-bar .action-bar .toggle {
+  margin-left: 0;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* Tighter header on narrower screens. */
+@media (max-width: 1400px) {
+  .top-bar .player-stats {
+    display: none;
+  }
+  .top-bar .player-card .portrait {
+    width: 32px;
+    height: 45px;
   }
 }

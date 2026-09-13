@@ -2883,3 +2883,12 @@ button.pick:disabled {
   transform: scale(0.96) translateY(6px);
   transition: transform 0.18s ease-in;
 }
+
+/* ---------- instruction cards animate in on every change and out on dismissal ---------- */
+.instruction-card.below,
+.instruction-card.centered {
+  animation: pop-in 0.16s ease-out;
+}
+.presence.leaving .instruction-card.centered {
+  transform: translate(-50%, -50%) scale(0.97);
+}

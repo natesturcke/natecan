@@ -488,11 +488,13 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
               onProjector={(fn) => (projector.current = fn)}
             />
             {/* Pure button decisions sit over the middle of the island; everything else sits just below the header. */}
-            {showPrompt && promptCentered && <PromptBar prompt={prompt} buttons={buttons} floating centered />}
+            <Presence show={showPrompt && promptCentered}>
+              {showPrompt && promptCentered && <PromptBar key={prompt.title} prompt={prompt} buttons={buttons} floating centered />}
+            </Presence>
             <Presence show={showPrompt && !promptCentered}>
               {showPrompt && !promptCentered && (
                 <div className="below-bar" style={{ top: barInsets.headerBottom }}>
-                  <PromptBar prompt={prompt} buttons={buttons} floating below />
+                  <PromptBar key={prompt.title} prompt={prompt} buttons={buttons} floating below />
                 </div>
               )}
             </Presence>

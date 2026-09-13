@@ -32,6 +32,27 @@ function hideOnError(e: React.SyntheticEvent<HTMLImageElement>): void {
   e.currentTarget.style.visibility = 'hidden';
 }
 
+/** A winding stretch of road in the player's colour, with its length on a small plaque. */
+function RoadBadge({ color, length, size = 64 }: { color: string; length: number; size?: number }): React.JSX.Element {
+  const w = size;
+  const h = Math.round(size * 0.75);
+  return (
+    <svg className="road-badge" width={w} height={h} viewBox="0 0 64 48" aria-hidden="true">
+      <path d="M6 40 L22 26 L38 34 L58 12" fill="none" stroke="#1d1710" strokeWidth="11" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M6 40 L22 26 L38 34 L58 12" fill="none" stroke={color} strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M6 40 L22 26 L38 34 L58 12" fill="none" stroke="rgba(255,255,255,0.35)" strokeWidth="1.5" strokeDasharray="4 4" strokeLinecap="round" />
+      {length > 0 && (
+        <>
+          <rect x="34" y="30" width="26" height="16" rx="4" fill="#fff4dc" stroke="#7a5a2c" strokeWidth="1.5" />
+          <text x="47" y="42" textAnchor="middle" fontSize="11" fontWeight="700" fill="#241a08" fontFamily="Georgia, serif">
+            {length}
+          </text>
+        </>
+      )}
+    </svg>
+  );
+}
+
 /** The winner and where every point came from, shown with the game's own art, then the standings. */
 export function GameOver({ state, human, onMenu }: { state: GameState; human: PlayerId; onMenu: () => void }): React.JSX.Element | null {
   if (state.phase.kind !== 'ended') return null;
@@ -66,10 +87,16 @@ export function GameOver({ state, human, onMenu }: { state: GameState; human: Pl
           {items.map((i) => (
             <div key={i.key} className="score-item">
               <div className={`score-art ${i.card ? 'card' : 'piece'}`}>
-                {Array.from({ length: Math.min(i.count, 5) }, (_, k) => (
-                  <img key={k} src={i.art} alt="" draggable={false} style={{ marginLeft: k === 0 ? 0 : i.card ? -28 : -22, zIndex: k }} onError={hideOnError} />
-                ))}
-                {i.count > 5 && <span className="score-more">+{i.count - 5}</span>}
+                {i.key === 'road' ? (
+                  <RoadBadge color={p.color} length={p.roadLength} />
+                ) : (
+                  <>
+                    {Array.from({ length: Math.min(i.count, 5) }, (_, k) => (
+                      <img key={k} src={i.art} alt="" draggable={false} style={{ marginLeft: k === 0 ? 0 : i.card ? -28 : -22, zIndex: k }} onError={hideOnError} />
+                    ))}
+                    {i.count > 5 && <span className="score-more">+{i.count - 5}</span>}
+                  </>
+                )}
               </div>
               <div className="score-label">
                 {i.count > 1 ? `${i.count} ` : ''}
@@ -94,7 +121,7 @@ export function GameOver({ state, human, onMenu }: { state: GameState; human: Pl
               <span className="standing-items">
                 {qi.map((i) => (
                   <span key={i.key} className="standing-item" title={`${i.label}: +${i.points}`}>
-                    <img src={i.art} alt="" draggable={false} className={i.card ? 'card' : 'piece'} onError={hideOnError} />
+                    {i.key === 'road' ? <RoadBadge color={q.color} length={q.roadLength} size={40} /> : <img src={i.art} alt="" draggable={false} className={i.card ? 'card' : 'piece'} onError={hideOnError} />}
                     {i.count > 1 && <span className="standing-count">×{i.count}</span>}
                   </span>
                 ))}

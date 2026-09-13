@@ -758,6 +758,8 @@ export class BoardScene extends Phaser.Scene {
   }
 
   private hovered: { kind: 'vertex' | 'edge' | 'hex'; id: number } | null = null;
+  /** Any tile under the cursor, legal target or not, for a gentle hover state. */
+  private tileHovered: number | null = null;
   /** A built piece under the cursor, drawn with a glow so hovering feels tactile. */
   private pieceHovered: { kind: 'vertex' | 'edge' | 'harbor'; id: number } | null = null;
   private infoZones: Phaser.GameObjects.Zone[] = [];
@@ -799,9 +801,13 @@ export class BoardScene extends Phaser.Scene {
       zone.setInteractive(new Phaser.Geom.Polygon(local), Phaser.Geom.Polygon.Contains);
       zone.on('pointermove', (pointer: Phaser.Input.Pointer) => {
         const cam = this.cameras.main;
+        this.tileHovered = h;
         this.bridge.emit('tileHover', { hex: h, x: (pointer.worldX - cam.worldView.x) * cam.zoom, y: (pointer.worldY - cam.worldView.y) * cam.zoom });
       });
-      zone.on('pointerout', () => this.bridge.emit('tileHover', null));
+      zone.on('pointerout', () => {
+        if (this.tileHovered === h) this.tileHovered = null;
+        this.bridge.emit('tileHover', null);
+      });
       this.infoZones.push(zone);
     }
     for (let v = 0; v < VERTEX_COUNT; v++) {
@@ -928,6 +934,15 @@ export class BoardScene extends Phaser.Scene {
     for (const m of this.dimMarkers) m.setAlpha(0.6 + 0.4 * beat).setScale(0.95 + 0.15 * beat);
     const hg = this.hoverGfx;
     hg.clear();
+    // Gentle hover state on whatever tile the cursor is over: a light wash and a soft outline.
+    if (this.tileHovered !== null && !this.hovered) {
+      const h = this.tileHovered;
+      const poly = hexPolygon(h).map((p) => ({ x: HEX_PX[h].x + (p.x - HEX_PX[h].x) * 0.985, y: HEX_PX[h].y + (p.y - HEX_PX[h].y) * 0.985 }));
+      hg.fillStyle(0xffffff, 0.09);
+      hg.fillPoints(poly, true);
+      hg.lineStyle(2, 0xffffff, 0.45);
+      hg.strokePoints(poly, true);
+    }
     if (this.pieceHovered && !this.hovered) {
       // Soft halo around the piece under the cursor.
       const glow = 0.45 + 0.25 * Math.sin(this.pulse * Math.PI * 1.5);

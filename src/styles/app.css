@@ -2757,3 +2757,21 @@ button.pick:disabled {
 .top-bar .player-card {
   border-width: 2px;
 }
+
+/* ---------- bars: let the water show through slightly ---------- */
+.top-bar,
+.bottom-bar {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.05) 38%, rgba(255, 255, 255, 0) 60%, rgba(0, 0, 0, 0.08) 100%),
+    rgba(26, 40, 54, 0.4);
+  backdrop-filter: blur(10px) saturate(1.5) brightness(1.02);
+  -webkit-backdrop-filter: blur(10px) saturate(1.5) brightness(1.02);
+}
+.top-bar .player-card,
+.trading-post,
+.bar-build button.btn.build,
+.bar-log .turn-log {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0) 55%),
+    rgba(16, 24, 32, 0.5);
+}

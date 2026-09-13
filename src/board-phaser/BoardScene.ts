@@ -346,14 +346,14 @@ export class BoardScene extends Phaser.Scene {
     }
   }
 
-  /** Lets a freshly created object fall from the sky onto its spot, landing with a small bounce. */
+  /** Lets a freshly created object fall straight down onto its spot: a clean, accelerating drop with no bounce. */
   private dropIn(obj: Phaser.GameObjects.GameObject, delay: number): void {
     const t = obj as unknown as { y: number; alpha: number; setAlpha?: (a: number) => void };
     const target = t.y;
-    t.y = target - HEX_R * 7;
+    t.y = target - HEX_R * 6;
     t.setAlpha?.(0);
-    this.tweens.add({ targets: obj, alpha: 1, delay, duration: 160, ease: 'Linear' });
-    this.tweens.add({ targets: obj, y: target, delay, duration: 720, ease: 'Bounce.easeOut' });
+    this.tweens.add({ targets: obj, alpha: 1, delay, duration: 120, ease: 'Linear' });
+    this.tweens.add({ targets: obj, y: target, delay, duration: 420, ease: 'Quad.easeIn' });
   }
 
   private buildStatic(view: BoardView): void {
@@ -364,13 +364,22 @@ export class BoardScene extends Phaser.Scene {
     this.tokens = [];
     this.harborObjs = [];
 
-    // First time the island appears, the tiles rain down one after another, north to south.
+    // First time the island appears, the tiles drop in one after another in a random order.
     const intro = !this.lastView;
-    const stagger = 75;
+    const stagger = 90;
     let dropIndex = 0;
     const order = [...Array(HEX_COUNT).keys()].sort((a, b) => HEX_PX[a].y - HEX_PX[b].y || HEX_PX[a].x - HEX_PX[b].x);
+    const dropSlot = new Map<number, number>();
+    if (intro) {
+      const shuffled = [...order];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      shuffled.forEach((h, i) => dropSlot.set(h, i));
+    }
     for (const h of order) {
-      const dropDelay = dropIndex * stagger;
+      const dropDelay = (dropSlot.get(h) ?? 0) * stagger;
       dropIndex++;
       const tile = view.hexes[h];
       const c = HEX_PX[h];
@@ -404,8 +413,8 @@ export class BoardScene extends Phaser.Scene {
         } else {
           this.tokens.push(this.drawFallbackToken(c.x, ty, tile.token, DEPTH.token + c.y * 0.001));
         }
-        // The number token lands a beat after its tile.
-        if (intro) this.dropIn(this.tokens[this.tokens.length - 1], dropDelay + 140);
+        // The number token lands right after its tile.
+        if (intro) this.dropIn(this.tokens[this.tokens.length - 1], dropDelay + 110);
       }
     }
     const harborDelay = dropIndex * stagger + 150;

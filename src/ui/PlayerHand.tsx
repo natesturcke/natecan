@@ -83,6 +83,12 @@ export function PlayerHand({ resources, selectable, selected, onToggle }: Player
             >
               <ResourceIcon resource={r} size={18} />
               <span className="hand-chip-count">{sel > 0 ? `${sel} of ${resources[r]}` : resources[r]}</span>
+              <span className="hand-chip-pop" aria-hidden="true">
+                <img src={`/art/card-${r}.png`} alt="" draggable={false} />
+                <span className="hand-chip-pop-label">
+                  {resources[r]} {label(r)}
+                </span>
+              </span>
             </div>
           );
         })}

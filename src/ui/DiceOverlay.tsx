@@ -88,7 +88,7 @@ export interface DiceOverlayProps {
  * missed. Purely presentational: the engine has already rolled.
  */
 export function DiceOverlay({ roll, onDone, autoDismiss }: DiceOverlayProps): React.JSX.Element | null {
-  const [stage, setStage] = useState<'tumble' | 'settled' | 'outcome' | 'hidden'>('hidden');
+  const [stage, setStage] = useState<'tumble' | 'settled' | 'outcome' | 'leaving' | 'hidden'>('hidden');
   const [spin, setSpin] = useState(0);
   const okRef = useRef<HTMLButtonElement>(null);
 
@@ -126,8 +126,12 @@ export function DiceOverlay({ roll, onDone, autoDismiss }: DiceOverlayProps): Re
   const total = roll.dice[0] + roll.dice[1];
   const settled = stage !== 'tumble';
   const dismiss = () => {
-    setStage('hidden');
-    onDone();
+    // Short fade-out before the panel goes, so the dismissal reads as a transition.
+    setStage('leaving');
+    setTimeout(() => {
+      setStage('hidden');
+      onDone();
+    }, 180);
   };
   return (
     <div className={`dice-overlay stage-${stage}`} aria-live="polite">
@@ -138,7 +142,7 @@ export function DiceOverlay({ roll, onDone, autoDismiss }: DiceOverlayProps): Re
       </div>
       <div className="dice-caption">
         <div className="dice-total">{settled ? `${roll.who} rolled ${total}` : `${roll.who} rolls…`}</div>
-        {stage === 'outcome' && (
+        {(stage === 'outcome' || stage === 'leaving') && (
           <div className={`dice-outcome ${roll.gains.length > 0 ? 'panel' : ''}`}>
             {roll.gains.map((g, i) => (
               <div key={i} className="gain-row" style={{ borderColor: g.color }}>
@@ -154,7 +158,7 @@ export function DiceOverlay({ roll, onDone, autoDismiss }: DiceOverlayProps): Re
             ))}
           </div>
         )}
-        {stage === 'outcome' && !autoDismiss && (
+        {(stage === 'outcome' || stage === 'leaving') && !autoDismiss && (
           <button ref={okRef} className="btn primary dice-ok" onClick={dismiss}>
             Okay <kbd>↵</kbd>
           </button>

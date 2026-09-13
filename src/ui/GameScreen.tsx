@@ -29,6 +29,7 @@ import { narrate, type LogLine } from './narrate';
 import { PlayerHand } from './PlayerHand';
 import { PlayerStrip } from './PlayerStrip';
 import { PromptBar, type PromptButton } from './PromptBar';
+import { Presence } from './Presence';
 import { buildDisabledReason, describeStep } from './prompts';
 import { humanPortraitKey, portraitKey } from './portraits';
 import { RulesDrawer } from './RulesDrawer';
@@ -488,11 +489,13 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
             />
             {/* Pure button decisions sit over the middle of the island; everything else sits just below the header. */}
             {showPrompt && promptCentered && <PromptBar prompt={prompt} buttons={buttons} floating centered />}
-            {showPrompt && !promptCentered && (
-              <div className="below-bar" style={{ top: barInsets.headerBottom }}>
-                <PromptBar prompt={prompt} buttons={buttons} floating below />
-              </div>
-            )}
+            <Presence show={showPrompt && !promptCentered}>
+              {showPrompt && !promptCentered && (
+                <div className="below-bar" style={{ top: barInsets.headerBottom }}>
+                  <PromptBar prompt={prompt} buttons={buttons} floating below />
+                </div>
+              )}
+            </Presence>
             {hover && hoverText && hover.kind === 'vertex' && !hoverIsCity && <CornerTooltip state={state} vertex={hover.id} action={hoverText} x={hover.x} y={hover.y} />}
             {hover && hoverText && (hover.kind !== 'vertex' || hoverIsCity) && (
               <div className="hover-tip" style={{ left: hover.x, top: hover.y }}>
@@ -546,17 +549,20 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
         </div>
       </div>
 
-      {pending && (
-        <ConfirmPopover
-          anchor={pending.anchorFromBoard ? ghostPos : (pending.anchor ?? null)}
-          question={pending.question}
-          note={pending.note}
-          confirmLabel={pending.action.type === 'END_TURN' ? 'End anyway' : 'Confirm'}
-          onConfirm={confirmPending}
-          onCancel={cancelPending}
-        />
-      )}
+      <Presence show={!!pending}>
+        {pending && (
+          <ConfirmPopover
+            anchor={pending.anchorFromBoard ? ghostPos : (pending.anchor ?? null)}
+            question={pending.question}
+            note={pending.note}
+            confirmLabel={pending.action.type === 'END_TURN' ? 'End anyway' : 'Confirm'}
+            onConfirm={confirmPending}
+            onCancel={cancelPending}
+          />
+        )}
+      </Presence>
       {dialog.kind === 'rules' && <RulesDrawer onClose={() => setDialog({ kind: 'none' })} />}
+      <Presence show={dialog.kind !== 'none' && dialog.kind !== 'rules'}>
       {dialog.kind === 'maritime' && (
         <MaritimeDialog state={state} human={human} onClose={() => setDialog({ kind: 'none' })} onConfirm={(give, receive) => dispatch({ player: human, type: 'MARITIME_TRADE', give, receive })} />
       )}
@@ -585,12 +591,17 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
           onConfirm={([resource]) => dispatch({ player: human, type: 'PLAY_MONOPOLY', resource })}
         />
       )}
-      {phase.kind === 'tradeOffer' && yourMove && (
-        <TradeOfferDialog state={state} human={human} onAccept={() => dispatch({ player: human, type: 'TRADE_ACCEPT' })} onDecline={() => dispatch({ player: human, type: 'TRADE_REJECT' })} />
-      )}
+      </Presence>
+      <Presence show={phase.kind === 'tradeOffer' && yourMove}>
+        {phase.kind === 'tradeOffer' && yourMove && (
+          <TradeOfferDialog state={state} human={human} onAccept={() => dispatch({ player: human, type: 'TRADE_ACCEPT' })} onDecline={() => dispatch({ player: human, type: 'TRADE_REJECT' })} />
+        )}
+      </Presence>
+      <Presence show={phase.kind === 'tradeResolve' && yourMove}>
       {phase.kind === 'tradeResolve' && yourMove && (
         <TradeResolveDialog state={state} human={human} onConfirm={(w) => dispatch({ player: human, type: 'TRADE_CONFIRM', with: w })} onCancel={() => dispatch({ player: human, type: 'TRADE_CANCEL' })} />
       )}
+      </Presence>
     </div>
   );
 }

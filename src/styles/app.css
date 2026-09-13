@@ -2852,3 +2852,34 @@ button.pick:disabled {
 .hand-chip.empty:hover {
   opacity: 0.8;
 }
+
+/* ---------- exit transitions ---------- */
+.presence {
+  display: contents;
+}
+.presence.leaving {
+  display: block;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.17s ease-in;
+}
+.presence.leaving .modal,
+.presence.leaving .confirm-popover,
+.presence.leaving .offer-peek,
+.presence.leaving .instruction-card {
+  transform: translateY(4px) scale(0.97);
+  transition: transform 0.17s ease-in;
+}
+.presence.leaving .modal-backdrop {
+  transition: background 0.17s ease-in;
+  background: rgba(0, 0, 0, 0);
+}
+.dice-overlay.stage-leaving {
+  opacity: 0;
+  transition: opacity 0.18s ease-in;
+}
+.dice-overlay.stage-leaving .dice-caption,
+.dice-overlay.stage-leaving .dice-row {
+  transform: scale(0.96) translateY(6px);
+  transition: transform 0.18s ease-in;
+}

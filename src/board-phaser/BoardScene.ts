@@ -816,6 +816,8 @@ export class BoardScene extends Phaser.Scene {
     const badge = (x: number, y: number) =>
       this.add
         .text(x, y, '!', { fontFamily: 'Georgia, serif', fontSize: '28px', fontStyle: 'bold', color: '#ffd166', stroke: '#2b2118', strokeThickness: 6 })
+        // Rasterise at high resolution so the glyph stays crisp when the camera zooms in.
+        .setResolution(Math.max(3, (window.devicePixelRatio || 1) * 2))
         .setOrigin(0.5, 1)
         .setDepth(DEPTH.highlight + 2);
     // A sparse palette so the ghosts use neutral amber art rather than any player's colours.

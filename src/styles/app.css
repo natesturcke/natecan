@@ -3730,3 +3730,30 @@ button.pick:disabled {
   font-size: 13px;
   margin-right: 4px;
 }
+
+/* ---------- looking over the final board after the game ---------- */
+.review-bar {
+  position: fixed;
+  left: 50%;
+  bottom: 232px;
+  transform: translateX(-50%);
+  z-index: 45;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  border-radius: 14px;
+  background: rgba(34, 28, 20, 0.94);
+  border: 1px solid rgba(243, 201, 107, 0.6);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.6);
+  animation: pop-in 0.16s ease-out;
+}
+.review-text {
+  font-family: var(--font);
+  font-size: 15px;
+  color: var(--accent-2);
+  white-space: nowrap;
+}
+.game-over-actions {
+  gap: 12px;
+}

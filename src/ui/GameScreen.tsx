@@ -41,6 +41,7 @@ import { TradeResolveDialog } from './dialogs/TradeResolveDialog';
 import { TradeOfferDialog } from './dialogs/TradeOfferDialog';
 import { DiscardDialog } from './dialogs/DiscardDialog';
 import { GameOver } from './GameOver';
+import { totalVictoryPoints } from '@/engine/rules/victory';
 import { bagText } from './text';
 
 export interface GameScreenProps {
@@ -180,6 +181,8 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
   const projector = useRef<((kind: 'hex' | 'vertex' | 'edge', id: number) => { x: number; y: number } | null) | null>(null);
   const [flights, setFlights] = useState<Flight[]>([]);
   const [produce, setProduce] = useState<{ id: number; hexes: number[] } | null>(null);
+  /** After the game ends: results hidden so the final island can be looked over. */
+  const [reviewing, setReviewing] = useState(false);
   const clearFlights = useCallback(() => {
     setFlights([]);
     // Safety net: whatever is still held back once every flight has finished, show it.
@@ -453,7 +456,9 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
   const promptCentered = state.phase.kind === 'ended' || (yourMove && state.phase.kind !== 'main' && highlights === NO_HIGHLIGHTS);
   // Board tooltips stay quiet while any dialog is up.
   const modalOpen =
-    dialog.kind !== 'none' || state.phase.kind === 'ended' || ((state.phase.kind === 'tradeOffer' || state.phase.kind === 'tradeResolve' || state.phase.kind === 'discard') && yourMove);
+    dialog.kind !== 'none' ||
+    (state.phase.kind === 'ended' && !reviewing) ||
+    ((state.phase.kind === 'tradeOffer' || state.phase.kind === 'tradeResolve' || state.phase.kind === 'discard') && yourMove);
   const barInsets = useBarInsets();
 
   // ----- prompt bar buttons -----
@@ -667,7 +672,22 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
         />
       )}
       </Presence>
-      <Presence show={phase.kind === 'ended'}>{phase.kind === 'ended' && <GameOver state={state} human={human} onMenu={onQuit} />}</Presence>
+      <Presence show={phase.kind === 'ended' && !reviewing}>
+        {phase.kind === 'ended' && !reviewing && <GameOver state={state} human={human} onMenu={onQuit} onView={() => setReviewing(true)} />}
+      </Presence>
+      {phase.kind === 'ended' && reviewing && (
+        <div className="review-bar">
+          <span className="review-text">
+            Game over · {phase.winner === human ? 'You' : state.players[phase.winner].name} won with {totalVictoryPoints(state, phase.winner)} points
+          </span>
+          <button className="btn small" onClick={() => setReviewing(false)}>
+            Show results
+          </button>
+          <button className="btn small primary" onClick={onQuit}>
+            Back to menu
+          </button>
+        </div>
+      )}
       <Presence show={phase.kind === 'discard' && yourMove}>
         {phase.kind === 'discard' && yourMove && (
           <DiscardDialog state={state} human={human} pick={discardPick} onToggle={toggleDiscard} onConfirm={() => dispatch({ player: human, type: 'DISCARD', resources: discardPick })} />

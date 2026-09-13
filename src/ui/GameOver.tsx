@@ -54,7 +54,7 @@ function RoadBadge({ color, length, size = 64 }: { color: string; length: number
 }
 
 /** The winner and where every point came from, shown with the game's own art, then the standings. */
-export function GameOver({ state, human, onMenu }: { state: GameState; human: PlayerId; onMenu: () => void }): React.JSX.Element | null {
+export function GameOver({ state, human, onMenu, onView }: { state: GameState; human: PlayerId; onMenu: () => void; onView: () => void }): React.JSX.Element | null {
   if (state.phase.kind !== 'ended') return null;
   const winner = state.phase.winner;
   const p = state.players[winner];
@@ -133,6 +133,9 @@ export function GameOver({ state, human, onMenu }: { state: GameState; human: Pl
         </div>
 
         <div className="game-over-actions">
+          <button className="btn big" onClick={onView} title="Hide the results and look over the final island">
+            View the board
+          </button>
           <button className="btn primary big" onClick={onMenu}>
             Back to menu
           </button>

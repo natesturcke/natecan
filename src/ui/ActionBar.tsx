@@ -9,8 +9,6 @@ export interface ActionBarProps {
   onMaritime: () => void;
   onTrade: () => void;
   onRules: () => void;
-  fast: boolean;
-  onFast: (on: boolean) => void;
   onQuit: () => void;
 }
 
@@ -39,9 +37,6 @@ export function ActionBar(p: ActionBarProps): React.JSX.Element {
         <button className="btn" onClick={p.onRules}>
           Rules
         </button>
-        <label className="toggle">
-          <input type="checkbox" checked={p.fast} onChange={(e) => p.onFast(e.target.checked)} /> Fast bots
-        </label>
         <button className="btn danger" onClick={p.onQuit}>
           Quit
         </button>

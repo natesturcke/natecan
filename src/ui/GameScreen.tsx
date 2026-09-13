@@ -513,8 +513,6 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
                 onMaritime={() => setDialog({ kind: 'maritime' })}
                 onTrade={() => setDialog({ kind: 'trade' })}
                 onRules={() => setDialog({ kind: 'rules' })}
-                fast={fast}
-                onFast={setFast}
                 onQuit={onQuit}
               />
             </header>

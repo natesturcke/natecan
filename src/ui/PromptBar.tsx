@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import type { StepPrompt } from './prompts';
 
 export interface PromptButton {
@@ -22,42 +21,13 @@ export interface PromptBarProps {
   below?: boolean;
 }
 
-const DETAIL_KEY = 'natecan:prompt-detail';
-
-function readDetailPref(): boolean {
-  try {
-    return window.localStorage.getItem(DETAIL_KEY) !== 'hidden';
-  } catch {
-    return true;
-  }
-}
-
 export function PromptBar({ prompt, buttons, floating, centered, docked, below }: PromptBarProps): React.JSX.Element {
-  const [showDetail, setShowDetail] = useState(readDetailPref);
-  const toggleDetail = () => {
-    const next = !showDetail;
-    setShowDetail(next);
-    try {
-      window.localStorage.setItem(DETAIL_KEY, next ? 'shown' : 'hidden');
-    } catch {
-      // Preference simply will not stick.
-    }
-  };
   const cls = floating ? `instruction-card ${centered ? 'centered' : ''} ${docked ? 'docked' : ''} ${below ? 'below' : ''}` : 'prompt-bar';
-  const collapsible = !!below && !!prompt.detail;
-  const detailVisible = prompt.detail && (!collapsible || showDetail);
   return (
     <div className={`${cls} ${prompt.yourMove ? 'yours' : 'theirs'}`} role="status" aria-live="polite">
       <div className="prompt-text">
-        <div className="prompt-title">
-          {prompt.title}
-          {collapsible && (
-            <button className="prompt-toggle" onClick={toggleDetail} title={showDetail ? 'Hide the explanation' : 'Show the explanation'} aria-expanded={showDetail}>
-              {showDetail ? 'less' : 'more'}
-            </button>
-          )}
-        </div>
-        {detailVisible && <div className="prompt-detail">{prompt.detail}</div>}
+        <div className="prompt-title">{prompt.title}</div>
+        {prompt.detail && <div className="prompt-detail">{prompt.detail}</div>}
       </div>
       <div className="prompt-buttons">
         {buttons.map((b) => (

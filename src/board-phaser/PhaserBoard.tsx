@@ -12,6 +12,8 @@ export interface PhaserBoardProps {
   ghost: Ghost;
   /** Screen margins taken by overlay panels. */
   insets?: Insets;
+  /** Hexes that just produced; a new id triggers the glow and sparks. */
+  produce?: { id: number; hexes: number[] } | null;
   onVertexClick?: (vertex: number) => void;
   onEdgeClick?: (edge: number) => void;
   onHexClick?: (hex: number) => void;
@@ -152,6 +154,9 @@ export function PhaserBoard(props: PhaserBoardProps): React.JSX.Element {
   useEffect(() => {
     bridgeRef.current.send('insets', props.insets ?? { left: 0, right: 0, top: 0, bottom: 0 });
   }, [props.insets]);
+  useEffect(() => {
+    if (props.produce && props.produce.hexes.length > 0) bridgeRef.current.send('produce', { hexes: props.produce.hexes });
+  }, [props.produce]);
 
   return (
     <>

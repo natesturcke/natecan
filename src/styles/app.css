@@ -3171,3 +3171,17 @@ button.pick:disabled {
 .top-bar .action-bar .row.bottom {
   align-items: center;
 }
+
+/* ---------- rules and quit stacked ---------- */
+.top-bar .action-bar .row.bottom {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 6px;
+  margin: 0;
+}
+.top-bar .action-bar .row.bottom .btn {
+  font-size: 13px;
+  padding: 6px 12px;
+  text-align: center;
+}

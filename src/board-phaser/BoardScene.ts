@@ -114,6 +114,13 @@ export class BoardScene extends Phaser.Scene {
     this.unsubscribe.push(this.bridge.onScene('view', (v) => this.setView(v)));
     this.unsubscribe.push(this.bridge.onScene('highlights', (h) => this.setHighlights(h)));
     this.unsubscribe.push(this.bridge.onScene('ghost', (g) => this.setGhost(g)));
+    this.unsubscribe.push(this.bridge.onScene('produce', (p) => this.flashProduction(p.hexes)));
+    // A soft round spark for production bursts.
+    const spark = this.add.graphics();
+    spark.fillStyle(0xffffff, 1);
+    spark.fillCircle(8, 8, 8);
+    spark.generateTexture('spark', 16, 16);
+    spark.destroy();
     this.unsubscribe.push(
       this.bridge.onScene('insets', (i) => {
         this.insets = i;
@@ -326,6 +333,43 @@ export class BoardScene extends Phaser.Scene {
   }
 
   // ---------- static layers ----------
+
+  /** The rolled tiles glow and throw off sparks; the resource cards then fly out from them. */
+  private flashProduction(hexes: readonly number[]): void {
+    for (const h of hexes) {
+      const c = HEX_PX[h];
+      const poly = hexPolygon(h).map((p) => ({ x: c.x + (p.x - c.x) * 0.96, y: c.y + (p.y - c.y) * 0.96 }));
+      const glow = this.add.graphics().setDepth(DEPTH.token - 1).setAlpha(0);
+      glow.fillStyle(0xfff3b0, 0.55);
+      glow.fillPoints(poly, true);
+      glow.lineStyle(4, 0xffe28a, 0.95);
+      glow.strokePoints(poly, true);
+      this.tweens.add({
+        targets: glow,
+        alpha: { from: 0, to: 1 },
+        duration: 260,
+        ease: 'Quad.easeOut',
+        yoyo: true,
+        hold: 380,
+        repeat: 1,
+        onComplete: () => glow.destroy(),
+      });
+      const sparks = this.add.particles(c.x, c.y - HEX_R * 0.1, 'spark', {
+        speed: { min: 60, max: 190 },
+        angle: { min: 240, max: 300 },
+        gravityY: 140,
+        lifespan: { min: 600, max: 1100 },
+        scale: { start: 0.55, end: 0 },
+        alpha: { start: 1, end: 0 },
+        tint: [0xfff3b0, 0xffd166, 0xffffff, 0xffb347],
+        blendMode: 'ADD',
+        emitting: false,
+      });
+      sparks.setDepth(DEPTH.piece + 50);
+      sparks.explode(28);
+      this.time.delayedCall(1400, () => sparks.destroy());
+    }
+  }
 
   private drawSea(x: number, y: number, w: number, h: number): void {
     if (this.has(MISC_KEYS.sea)) {

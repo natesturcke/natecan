@@ -7,6 +7,8 @@ export interface ToScene {
   highlights: Highlights;
   ghost: Ghost;
   insets: Insets;
+  /** These hexes just produced: light them up with a burst of sparks. */
+  produce: { hexes: readonly number[] };
 }
 
 export interface FromScene {

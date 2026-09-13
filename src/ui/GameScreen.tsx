@@ -171,6 +171,7 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
   const [pieceHover, setPieceHover] = useState<PieceHover | null>(null);
   const projector = useRef<((hex: number) => { x: number; y: number } | null) | null>(null);
   const [flights, setFlights] = useState<Flight[]>([]);
+  const [produce, setProduce] = useState<{ id: number; hexes: number[] } | null>(null);
   const clearFlights = useCallback(() => setFlights([]), []);
   // Animations only play for moves made after this screen opened, never for a reopened game's history.
   const historyAtMount = useRef(history.length);
@@ -292,20 +293,19 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
     // Resource flights start when the dice have settled (see DiceOverlay timing).
     if (produced && produced.type === 'resourcesProduced' && rolled.total !== 7) {
       const total = rolled.total;
+      const producing = (boardIndex(state.board).hexesByToken.get(total) ?? []).filter((h) => h !== state.robber && !!TERRAIN_RESOURCE[state.board.hexes[h].terrain]);
+      // First the rolled tiles light up and throw sparks, then the cards fly out from them.
+      const flash = setTimeout(() => setProduce({ id: history.length, hexes: producing }), 2200);
       const t = setTimeout(() => {
         const project = projector.current;
-        const board = document.querySelector('.board-area')?.getBoundingClientRect();
-        if (!project || !board) return;
-        const from = { x: board.left + board.width / 2, y: board.top + board.height / 2 };
+        if (!project) return;
         const list: Flight[] = [];
-        const hexes = boardIndex(state.board).hexesByToken.get(total) ?? [];
         let n = 0;
-        for (const h of hexes) {
-          if (h === state.robber) continue;
+        for (const h of producing) {
           const resource = TERRAIN_RESOURCE[state.board.hexes[h].terrain];
           if (!resource) continue;
-          const via = project(h);
-          if (!via) continue;
+          const at = project(h);
+          if (!at) continue;
           for (const v of TOPOLOGY.hexVertices[h]) {
             const b = state.buildings[v];
             if (!b) continue;
@@ -314,14 +314,24 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
             if (!card) continue;
             const count = b.kind === 'city' ? 2 : 1;
             for (let i = 0; i < count; i++) {
-              list.push({ id: `${history.length}-${h}-${v}-${i}`, resource, from, via: { x: via.x + (i - 0.5) * 44, y: via.y }, to: { x: card.left + card.width / 2, y: card.top + card.height / 2 }, delay: n * 260 });
+              list.push({
+                id: `${history.length}-${h}-${v}-${i}`,
+                resource,
+                from: { x: at.x, y: at.y + 6 },
+                via: { x: at.x + (i - 0.5) * 44, y: at.y - 24 },
+                to: { x: card.left + card.width / 2, y: card.top + card.height / 2 },
+                delay: n * 260,
+              });
               n++;
             }
           }
         }
         setFlights(list);
-      }, 2600);
-      return () => clearTimeout(t);
+      }, 2900);
+      return () => {
+        clearTimeout(flash);
+        clearTimeout(t);
+      };
     }
   }, [history, history.length, human, state.players, state.board, state.robber, state.buildings]);
   const clearDice = useCallback(() => setDiceRoll(null), []);
@@ -486,6 +496,7 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
               onTileHover={setTileHover}
               onPieceHover={setPieceHover}
               onProjector={(fn) => (projector.current = fn)}
+              produce={produce}
             />
             {/* Pure button decisions sit over the middle of the island; everything else sits just below the header. */}
             <Presence show={showPrompt && promptCentered}>

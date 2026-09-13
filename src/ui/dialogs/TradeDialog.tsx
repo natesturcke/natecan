@@ -1,26 +1,34 @@
 import { useState } from 'react';
-import { bag, bagIsEmpty } from '@/engine/bag';
+import { bag, bagIsEmpty, bagTotal } from '@/engine/bag';
 import { offerShapeError } from '@/engine/rules/trade';
 import type { GameState, PlayerId, Resource, ResourceBag } from '@/engine/types';
 import { RESOURCES } from '@/engine/types';
 import { Modal } from './Modal';
-import { ResourceIcon } from '../ResourceIcon';
-import { RESOURCE_LABEL } from '../text';
+import { PlayerHand } from '../PlayerHand';
+import { RESOURCE_LABEL, bagText } from '../text';
 
-function Stepper({ value, max, onChange }: { value: number; max: number; onChange: (v: number) => void }): React.JSX.Element {
+/** Big named cards; clicking one removes it from that side of the deal. */
+function Cards({ bag: b, onRemove, empty }: { bag: ResourceBag; onRemove: (r: Resource) => void; empty: string }): React.JSX.Element {
+  if (bagTotal(b) === 0) return <span className="offer-nothing">{empty}</span>;
   return (
-    <span className="stepper">
-      <button className="btn tiny" onClick={() => onChange(value - 1)} disabled={value <= 0}>
-        −
-      </button>
-      <span>{value}</span>
-      <button className="btn tiny" onClick={() => onChange(value + 1)} disabled={value >= max}>
-        +
-      </button>
+    <span className="offer-cards big">
+      {RESOURCES.flatMap((r) =>
+        Array.from({ length: b[r] }, (_, i) => (
+          <button key={`${r}${i}`} type="button" className="offer-card clickable" title={`Remove ${RESOURCE_LABEL[r]}`} onClick={() => onRemove(r)}>
+            <img src={`/art/card-${r}.png`} alt="" draggable={false} />
+            <span className="offer-card-label">{RESOURCE_LABEL[r]}</span>
+            <span className="offer-card-x">×</span>
+          </button>
+        )),
+      )}
     </span>
   );
 }
 
+/**
+ * Make an offer to the other players. Click cards in your hand to put them on the table,
+ * and click the bank's cards to say what you want back. Same look as an incoming offer.
+ */
 export function TradeDialog({
   state,
   human,
@@ -36,43 +44,46 @@ export function TradeDialog({
   const [give, setGive] = useState<ResourceBag>(bag());
   const [want, setWant] = useState<ResourceBag>(bag());
   const error = bagIsEmpty(give) || bagIsEmpty(want) ? null : offerShapeError(give, want);
-  const set = (which: 'give' | 'want', r: Resource, v: number) => {
-    const upd = which === 'give' ? setGive : setWant;
-    upd((b) => ({ ...b, [r]: v }));
-  };
+  const ready = !bagIsEmpty(give) && !bagIsEmpty(want) && !error;
+
+  const addGive = (r: Resource, delta: 1 | -1) => setGive((b) => ({ ...b, [r]: Math.max(0, Math.min(me.resources[r], b[r] + delta)) }));
+  const addWant = (r: Resource, delta: 1 | -1) => setWant((b) => ({ ...b, [r]: Math.max(0, Math.min(19, b[r] + delta)) }));
+
   return (
-    <Modal title="Offer a trade" onClose={onClose}>
-      <p className="muted">Every other player will accept or decline. Then you pick who to trade with.</p>
-      <table className="trade-table">
-        <thead>
-          <tr>
-            <th></th>
-            <th>You give</th>
-            <th>You want</th>
-          </tr>
-        </thead>
-        <tbody>
-          {RESOURCES.map((r) => (
-            <tr key={r}>
-              <td>
-                <ResourceIcon resource={r} size={18} /> {RESOURCE_LABEL[r]} <span className="muted">({me.resources[r]})</span>
-              </td>
-              <td>
-                <Stepper value={give[r]} max={me.resources[r]} onChange={(v) => set('give', r, v)} />
-              </td>
-              <td>
-                <Stepper value={want[r]} max={19} onChange={(v) => set('want', r, v)} />
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      {error && <p className="error">{error}</p>}
+    <Modal title="Offer a trade" onClose={onClose} wide>
+      <div className="offer-hand">
+        <div className="offer-heading">
+          Your hand <span className="muted">(click cards to put them on the table)</span>
+        </div>
+        <PlayerHand resources={me.resources} selectable selected={give} onToggle={addGive} />
+      </div>
+      <div className="offer-grid">
+        <div className="offer-side">
+          <div className="offer-heading give">You give</div>
+          <Cards bag={give} onRemove={(r) => addGive(r, -1)} empty="Click cards in your hand above" />
+        </div>
+        <div className="offer-arrow">⇄</div>
+        <div className="offer-side">
+          <div className="offer-heading get">You want</div>
+          <Cards bag={want} onRemove={(r) => addWant(r, -1)} empty="Pick from the bank below" />
+          <div className="offer-picker" aria-label="Add a resource you want">
+            {RESOURCES.map((r) => (
+              <button key={r} type="button" className="offer-pick" title={`Ask for 1 ${RESOURCE_LABEL[r]}`} onClick={() => addWant(r, 1)} disabled={give[r] > 0}>
+                <img src={`/art/card-${r}.png`} alt="" draggable={false} />
+                <span className="offer-pick-plus">+</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+      <p className={error ? 'error' : 'muted offer-summary'}>
+        {error ?? (ready ? `You offer ${bagText(give)} for ${bagText(want)}. Every other player will accept or decline, then you pick who to trade with.` : 'Every other player will accept or decline. Then you pick who to trade with.')}
+      </p>
       <div className="modal-actions">
         <button className="btn" onClick={onClose}>
           Cancel
         </button>
-        <button className="btn primary" disabled={bagIsEmpty(give) || bagIsEmpty(want) || !!error} onClick={() => onConfirm(give, want)}>
+        <button className="btn primary" disabled={!ready} onClick={() => onConfirm(give, want)}>
           Send offer
         </button>
       </div>

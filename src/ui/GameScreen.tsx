@@ -543,7 +543,9 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
                 />
               </section>
               <section className="bar-log">
-                <div className="section-title">Log</div>
+                <div className="section-title">
+                  Log <span className="muted log-turns">· {Math.max(0, state.turn.number - 1)} turns completed</span>
+                </div>
                 <TurnLog lines={logLines} state={state} human={human} />
               </section>
             </footer>

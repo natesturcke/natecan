@@ -78,7 +78,6 @@ export function TradeOfferDialog({ state, human, onAccept, onDecline }: { state:
           Accept trade
         </button>
       </div>
-      <div className="modal-hint">Click anywhere outside this card to look at your hand. The offer waits for you.</div>
     </Modal>
   );
 }

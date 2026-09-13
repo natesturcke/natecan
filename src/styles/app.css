@@ -4180,3 +4180,57 @@ body {
     padding-left: 0;
   }
 }
+
+/* ---------- tablets: floating tray instead of a bottom bar ---------- */
+.touch-tray {
+  position: absolute;
+  left: 12px;
+  bottom: 8px;
+  z-index: 18;
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  pointer-events: none;
+}
+.touch-tray > * {
+  pointer-events: auto;
+}
+.touch-tray .bar-hand {
+  width: 300px;
+}
+.touch-tray .bar-hand .hand-arc {
+  height: 110px;
+}
+.touch-tray .bar-hand .hand-card-btn {
+  top: -8px;
+}
+.touch-tray .section-title,
+.touch-tray .hand-title {
+  color: #fff4dc;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
+  font-size: 12px;
+}
+.touch-tray .bar-dev .dev-cards {
+  flex-wrap: nowrap;
+}
+.touch-tray .bar-dev .card-face {
+  width: 64px;
+  height: 90px;
+}
+.touch-tray .bar-dev .dev-card-wrap {
+  width: 64px;
+}
+.btn.buy-dev {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 8px 12px;
+  margin-bottom: 4px;
+  font-size: 12.5px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0) 55%),
+    rgba(12, 20, 28, 0.72);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}

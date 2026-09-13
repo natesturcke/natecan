@@ -41,6 +41,7 @@ import { TradeResolveDialog } from './dialogs/TradeResolveDialog';
 import { TradeOfferDialog } from './dialogs/TradeOfferDialog';
 import { DiscardDialog } from './dialogs/DiscardDialog';
 import { GameOver } from './GameOver';
+import { CostIcons } from './ResourceIcon';
 import { totalVictoryPoints } from '@/engine/rules/victory';
 import { bagText } from './text';
 
@@ -167,7 +168,8 @@ function useBarInsets(layoutKey: string): BarInsets {
         left: left ? Math.round(left.right - area.left + 16) : 16,
         right: right ? Math.round(area.right - right.left + 16) : 16,
         top: headerBottom + CARD_ALLOWANCE,
-        bottom: bottom ? Math.round(area.bottom - bottom.top + 12) : 16,
+        // A floating tray only claims a little of the bottom edge; the island may overlap its corner.
+        bottom: bottom ? Math.round(area.bottom - bottom.top + 12) : document.querySelector('.touch-tray') ? 72 : 16,
         headerBottom,
       };
       setInsets((cur) =>
@@ -699,12 +701,29 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
                   <PlayerStrip state={state} human={human} />
                   {actionBar}
                 </header>
-                <footer className={`bottom-bar ${compactLog ? 'compact' : ''}`}>
-                  {handSection}
-                  {devSection}
-                  {buildSection}
-                  {!compactLog && logSection}
-                </footer>
+                {compactLog ? (
+                  /* Tablets: no bar at all. The hand floats bottom-left; building happens by tapping the island. */
+                  <div className="touch-tray">
+                    {handSection}
+                    {devSection}
+                    <button
+                      className="btn buy-dev"
+                      disabled={!!buildDisabledReason(state, human, 'devCard')}
+                      title={buildDisabledReason(state, human, 'devCard') ?? 'Buy a development card for 1 Ore, 1 Grain, 1 Wool'}
+                      onClick={(e) => select({ player: human, type: 'BUY_DEV_CARD' }, 'Costs 1 ore, 1 grain, 1 wool. The card is drawn at random.', anchorFromEvent(e))}
+                    >
+                      Buy development card <span className="muted">({state.devDeck.length} left)</span>
+                      <CostIcons cost={COSTS.devCard} />
+                    </button>
+                  </div>
+                ) : (
+                  <footer className="bottom-bar">
+                    {handSection}
+                    {devSection}
+                    {buildSection}
+                    {logSection}
+                  </footer>
+                )}
               </>
             )}
             {logDrawer}

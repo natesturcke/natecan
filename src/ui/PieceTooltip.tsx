@@ -5,14 +5,32 @@ import type { GameState, PlayerId } from '@/engine/types';
 import { RESOURCE_LABEL, TERRAIN_LABEL } from './text';
 
 export interface PieceHover {
-  kind: 'vertex' | 'edge';
+  kind: 'vertex' | 'edge' | 'harbor';
   id: number;
   x: number;
   y: number;
 }
 
-/** Rules-relevant facts about a settlement, city or road under the cursor. */
+/** Rules-relevant facts about a settlement, city, road or harbour under the cursor. */
 export function PieceTooltip({ state, human, hover }: { state: GameState; human: PlayerId; hover: PieceHover }): React.JSX.Element | null {
+  if (hover.kind === 'harbor') {
+    const harbor = state.board.harbors[hover.id];
+    if (!harbor) return null;
+    const resourceName = harbor.kind === 'generic' ? null : RESOURCE_LABEL[harbor.kind];
+    const owners = harbor.vertices.map((v) => state.buildings[v]).filter((b): b is NonNullable<typeof b> => !!b);
+    const yours = owners.some((b) => b.owner === human);
+    const names = owners.map((b) => (b.owner === human ? 'you' : state.players[b.owner].name));
+    return (
+      <div className="tile-tip" style={{ left: hover.x + 18, top: hover.y + 18 }}>
+        <div className="tile-tip-title">{resourceName ? `2:1 ${resourceName} Harbour` : '3:1 Harbour'}</div>
+        <div className="tile-tip-line">{resourceName ? `Trade 2 ${resourceName} for 1 card of your choice.` : 'Trade any 3 identical cards for 1 card of your choice.'}</div>
+        <div className="tile-tip-line">Without a harbour the bank charges 4 identical cards for 1.</div>
+        <div className={`tile-tip-line ${yours ? 'good' : 'muted'}`}>
+          {owners.length === 0 ? 'Build on one of its two corners to use it.' : yours ? 'You have a settlement here, so you can use it.' : `Used by ${names.join(' and ')}. Build on its other corner to share it.`}
+        </div>
+      </div>
+    );
+  }
   if (hover.kind === 'edge') {
     const owner = state.roads[hover.id];
     if (owner === -1) return null;

@@ -436,8 +436,18 @@ export function GameScreen({ controller, human, onQuit }: GameScreenProps): Reac
           // Ending the turn only asks for confirmation when there is still something you could build.
           buttons.push({
             label: 'End turn',
-            onClick: (e) => (canBuild ? select({ player: human, type: 'END_TURN' }, 'You can still afford to build something.', anchorFromEvent(e)) : dispatch({ player: human, type: 'END_TURN' })),
+            onClick: () => {
+              if (!canBuild) {
+                dispatch({ player: human, type: 'END_TURN' });
+                return;
+              }
+              // The instruction card fades out once something is pending, so anchor over the island instead of the button.
+              const area = document.querySelector('.board-area')?.getBoundingClientRect();
+              const anchor = area ? { x: area.left + area.width / 2, y: area.top + area.height * 0.5 } : null;
+              select({ player: human, type: 'END_TURN' }, 'You can still afford to build something.', anchor);
+            },
             primary: !canBuild,
+            pulse: true,
           });
         }
         break;

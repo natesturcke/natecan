@@ -6,6 +6,8 @@ export interface PromptButton {
   primary?: boolean;
   disabled?: boolean;
   title?: string;
+  /** Draw attention with a slow glow, for the one button that moves the game on. */
+  pulse?: boolean;
 }
 
 export interface PromptBarProps {
@@ -31,7 +33,7 @@ export function PromptBar({ prompt, buttons, floating, centered, docked, below }
       </div>
       <div className="prompt-buttons">
         {buttons.map((b) => (
-          <button key={b.label} className={b.primary ? 'btn primary' : 'btn'} onClick={b.onClick} disabled={b.disabled} title={b.title}>
+          <button key={b.label} className={`btn ${b.primary ? 'primary' : ''} ${b.pulse ? 'pulse' : ''}`} onClick={b.onClick} disabled={b.disabled} title={b.title}>
             {b.label}
           </button>
         ))}

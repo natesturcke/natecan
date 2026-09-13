@@ -22,7 +22,7 @@ export interface FromScene {
   /** Cursor over any hex tile (for the info tooltip), canvas pixels. */
   tileHover: { hex: number; x: number; y: number } | null;
   /** Cursor over a settlement, city (vertex) or road (edge), canvas pixels. */
-  pieceHover: { kind: 'vertex' | 'edge'; id: number; x: number; y: number } | null;
+  pieceHover: { kind: 'vertex' | 'edge' | 'harbor'; id: number; x: number; y: number } | null;
   ready: void;
 }
 

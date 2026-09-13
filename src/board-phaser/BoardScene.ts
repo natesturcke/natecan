@@ -66,6 +66,8 @@ export class BoardScene extends Phaser.Scene {
   private tiles: Phaser.GameObjects.GameObject[] = [];
   private tokens: Phaser.GameObjects.GameObject[] = [];
   private harborObjs: Phaser.GameObjects.GameObject[] = [];
+  /** World position of each harbour ship, by harbour index, for the hover halo. */
+  private harborPos: Point[] = [];
   private roadObjs: (Phaser.GameObjects.GameObject | null)[] = [];
   private buildingObjs: (Phaser.GameObjects.GameObject | null)[] = [];
   private robberObj: Phaser.GameObjects.GameObject | null = null;
@@ -481,6 +483,16 @@ export class BoardScene extends Phaser.Scene {
         this.harborObjs.push(this.drawFallbackHarbor(x, y, harbor.kind, depth));
       }
       if (intro) this.dropIn(this.harborObjs[this.harborObjs.length - 1], harborDelay + harborIndex * 90);
+      // Hover zone over the ship for the harbour tooltip.
+      const hi = harborIndex;
+      this.harborPos[hi] = { x, y };
+      const hz = this.add.zone(x, y - HEX_R * 0.15, HEX_R * 0.9, HEX_R * 0.9).setDepth(DEPTH.zone - 2.6);
+      hz.setInteractive(new Phaser.Geom.Circle(HEX_R * 0.45, HEX_R * 0.45, HEX_R * 0.45), Phaser.Geom.Circle.Contains);
+      hz.on('pointermove', (pointer: Phaser.Input.Pointer) => this.setPieceHover({ kind: 'harbor', id: hi }, pointer));
+      hz.on('pointerout', () => {
+        if (this.pieceHovered?.kind === 'harbor' && this.pieceHovered.id === hi) this.setPieceHover(null);
+      });
+      this.harborObjs.push(hz);
       harborIndex++;
       // Faint dashed lines to the two harbor vertices help players see which corners count.
       const g = this.add.graphics().setDepth(depth - 0.0005);
@@ -747,17 +759,17 @@ export class BoardScene extends Phaser.Scene {
 
   private hovered: { kind: 'vertex' | 'edge' | 'hex'; id: number } | null = null;
   /** A built piece under the cursor, drawn with a glow so hovering feels tactile. */
-  private pieceHovered: { kind: 'vertex' | 'edge'; id: number } | null = null;
+  private pieceHovered: { kind: 'vertex' | 'edge' | 'harbor'; id: number } | null = null;
   private infoZones: Phaser.GameObjects.Zone[] = [];
 
-  private setPieceHover(target: { kind: 'vertex' | 'edge'; id: number } | null, pointer?: Phaser.Input.Pointer): void {
+  private setPieceHover(target: { kind: 'vertex' | 'edge' | 'harbor'; id: number } | null, pointer?: Phaser.Input.Pointer): void {
     const prev = this.pieceHovered;
     this.pieceHovered = target;
     const changed = prev?.kind !== target?.kind || prev?.id !== target?.id;
     if (changed) {
       // Lift the piece slightly while hovered, and settle it back afterwards.
-      const lift = (t: { kind: 'vertex' | 'edge'; id: number } | null, up: boolean) => {
-        if (!t) return;
+      const lift = (t: { kind: 'vertex' | 'edge' | 'harbor'; id: number } | null, up: boolean) => {
+        if (!t || t.kind === 'harbor') return;
         const obj = t.kind === 'vertex' ? this.buildingObjs[t.id] : this.roadObjs[t.id];
         if (!obj) return;
         const base = t.kind === 'vertex' ? VERTEX_PX[t.id].y : EDGE_PX[t.id].mid.y;
@@ -923,6 +935,12 @@ export class BoardScene extends Phaser.Scene {
         const p = VERTEX_PX[this.pieceHovered.id];
         hg.lineStyle(5, 0xffffff, glow);
         hg.strokeEllipse(p.x, p.y, HEX_R * 0.7, HEX_R * 0.7 * CAMERA_K);
+      } else if (this.pieceHovered.kind === 'harbor') {
+        const p = this.harborPos[this.pieceHovered.id];
+        if (p) {
+          hg.lineStyle(5, 0xffffff, glow);
+          hg.strokeEllipse(p.x, p.y, HEX_R * 0.9, HEX_R * 0.9 * CAMERA_K);
+        }
       } else {
         const [va, vb] = TOPOLOGY.edgeVertices[this.pieceHovered.id];
         hg.lineStyle(HEX_R * 0.2, 0xffffff, glow * 0.6);

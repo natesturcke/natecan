@@ -3202,3 +3202,116 @@ button.pick:disabled {
   align-self: center;
   font-size: 13px;
 }
+
+/* ---------- the End turn button breathes so it is never missed ---------- */
+.btn.pulse {
+  border-color: var(--accent);
+  color: #fff4dc;
+  animation: btn-pulse 1.8s ease-in-out infinite;
+}
+.btn.pulse.primary {
+  color: #241a08;
+}
+@keyframes btn-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(224, 169, 74, 0.55);
+  }
+  50% {
+    box-shadow: 0 0 0 7px rgba(224, 169, 74, 0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn.pulse {
+    animation: none;
+    box-shadow: 0 0 0 2px rgba(224, 169, 74, 0.5);
+  }
+}
+
+/* ---------- build buttons: hover pop-out with cost cards and what the piece does ---------- */
+.build-wrap {
+  position: relative;
+  display: block;
+}
+.build-wrap > .btn.build {
+  width: 100%;
+}
+.build-pop {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 10px);
+  transform: translateX(-50%) translateY(6px) scale(0.97);
+  width: 300px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(20, 16, 12, 0.95);
+  border: 1px solid var(--accent);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.6);
+  color: #fff4dc;
+  font-size: 12px;
+  line-height: 1.35;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease, transform 0.12s ease;
+  z-index: 70;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+}
+.build-wrap:hover .build-pop {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0) scale(1);
+}
+.build-pop-title {
+  font-family: var(--font);
+  font-size: 13px;
+  color: var(--accent-2);
+}
+.build-pop-cards {
+  display: flex;
+  gap: 6px;
+}
+.build-pop-card {
+  position: relative;
+  width: 44px;
+  height: 62px;
+  border-radius: 5px;
+  overflow: hidden;
+  background: #3a2e20;
+  box-shadow: 0 0 0 1px rgba(255, 240, 210, 0.35);
+}
+.build-pop-card img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.build-pop-card.missing {
+  filter: grayscale(0.9) brightness(0.55);
+}
+.build-pop-card.missing::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 2px dashed rgba(239, 138, 122, 0.8);
+  border-radius: 5px;
+}
+.build-pop-card-label {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  font-size: 9px;
+  font-weight: 700;
+  text-align: center;
+  padding: 1px 0 2px;
+  background: rgba(20, 16, 12, 0.85);
+}
+.build-pop-about {
+  color: #e6dfd2;
+}
+.build-pop-reason {
+  color: var(--bad);
+  font-weight: 600;
+}
